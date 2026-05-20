@@ -20,7 +20,7 @@ function initApp(user) {
     if (inp) inp.value = apiKey;
   }
 
-  console.log(`%c🎯 LeadForge Pro%c loaded for ${user.name || user.email}`,
+  console.log(`%c🎯 Nexus Leads CRM%c loaded for ${user.name || user.email}`,
     'font-size:16px;font-weight:bold;color:#4f8ef7',
     'font-size:14px;color:#8b9ab5'
   );
@@ -83,7 +83,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Console Easter Egg ────────────────────────
-console.log('%c🎯 LeadForge Pro — B2B Lead Generation Platform\n%cPowered by Apify Google Maps Scraper\n📧 Built with ❤️',
+console.log('%c🎯 Nexus Leads CRM — B2B Lead Generation Platform\n%cPowered by Apify Google Maps Scraper\n📧 Built with ❤️',
   'font-size:20px;font-weight:bold;background:linear-gradient(135deg,#4f8ef7,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent',
   'color:#8b9ab5;font-size:13px'
 );
