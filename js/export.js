@@ -60,7 +60,7 @@ function exportLeadsCSV() {
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel UTF-8
-  downloadBlob(blob, `Nexus_Leads_${dateStamp()}.csv`);
+  downloadBlob(blob, `My_Lead_Generator_Leads_${dateStamp()}.csv`);
   showToast(`✅ Exported ${leads.length} leads as CSV`, 'success');
 }
 
@@ -137,7 +137,7 @@ function exportLeadsExcel() {
   XLSX.utils.book_append_sheet(wb, wsLoc, 'By Location');
 
   // Write and download
-  XLSX.writeFile(wb, `Nexus_Leads_${dateStamp()}.xlsx`);
+  XLSX.writeFile(wb, `My_Lead_Generator_Leads_${dateStamp()}.xlsx`);
   showToast(`✅ Exported ${leads.length} leads as Excel (.xlsx)`, 'success');
 }
 
