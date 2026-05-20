@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<!-- LeadForge Pro v1.1 — Actor fix applied -->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeadForge Pro — B2B Lead Generation Platform</title>
+  <meta name="description" content="Enterprise-grade B2B lead generation platform powered by Apify & Google Maps. Find IT distributors, resellers, and enterprise customers instantly." />
+  <meta name="keywords" content="B2B leads, IT distribution, lead generation, Google Maps scraper, CRM, sales leads" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-bg-orbs"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon" style="background:transparent; box-shadow:none;"><img src="DCC Logo Back.png" style="width:100%;height:100%;object-fit:contain;border-radius:var(--radius-md);" alt="DCC Logo"/></div>
+      <div class="auth-logo-text">LeadForge Pro</div>
+    </div>
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-subtitle">Sign in to your B2B lead generation platform</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="showAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-register" onclick="showAuthTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">📧</span>
+          <input type="email" id="login-email" class="form-input" placeholder="you@company.com" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required />
+          <span class="input-eye" onclick="togglePwd('login-password')">👁</span>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+        Sign In
+      </button>
+      <div class="divider-text" style="margin-top:16px"><span>or continue with demo</span></div>
+      <button type="button" class="btn btn-secondary btn-full" onclick="loginDemo()">
+        🚀 Try Demo Mode (No Account Needed)
+      </button>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" id="reg-fname" class="form-input" placeholder="John" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" id="reg-lname" class="form-input" placeholder="Doe" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">📧</span>
+          <input type="email" id="reg-email" class="form-input" placeholder="you@company.com" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Company Name</label>
+        <input type="text" id="reg-company" class="form-input" placeholder="Acme Corp" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reg-password" class="form-input" placeholder="Min. 8 characters" required minlength="8"/>
+          <span class="input-eye" onclick="togglePwd('reg-password')">👁</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subscription Plan</label>
+        <select id="reg-plan" class="form-select">
+          <option value="free">Free — 50 leads/month</option>
+          <option value="pro">Pro — Unlimited leads ($49/mo)</option>
+          <option value="enterprise">Enterprise — Custom pricing</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+        Create Account
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-icon" style="background:transparent; box-shadow:none;"><img src="DCC Logo Back.png" style="width:100%;height:100%;object-fit:contain;border-radius:10px;" alt="DCC Logo"/></div>
+      <div class="sidebar-logo-text">LeadForge Pro</div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+
+      <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+
+      <div class="nav-item" id="nav-generate" onclick="showPage('generate')">
+        <span class="nav-icon">🚀</span>
+        <span class="nav-label">Generate Leads</span>
+      </div>
+
+      <div class="nav-item" id="nav-leads" onclick="showPage('leads')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">My Leads</span>
+        <span class="nav-badge" id="leads-count-badge">0</span>
+      </div>
+
+      <div class="nav-section-label">Tools</div>
+
+      <div class="nav-item" id="nav-history" onclick="showPage('history')">
+        <span class="nav-icon">🕐</span>
+        <span class="nav-label">Scrape History</span>
+      </div>
+
+      <div class="nav-item" id="nav-analytics" onclick="showPage('analytics')">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Analytics</span>
+      </div>
+
+      <div class="nav-section-label">Account</div>
+
+      <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card" onclick="showPage('settings')">
+        <div class="user-avatar" id="user-avatar-sidebar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name-sidebar">User</div>
+          <div class="user-plan" id="user-plan-sidebar">Free Plan</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="handleLogout()" style="margin-top:6px;justify-content:flex-start;gap:8px">
+        <span>🚪</span> <span class="nav-label" style="opacity:1">Logout</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div class="page-subtitle" id="page-subtitle">Welcome back! Here's your lead overview.</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+        <button class="notif-btn" title="Notifications">
+          🔔
+          <span class="notif-dot"></span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="showPage('generate')">
+          ⚡ New Run
+        </button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+
+      <!-- ════════════════════════
+           DASHBOARD PAGE
+      ═══════════════════════════ -->
+      <div class="page active" id="page-dashboard">
+
+        <div class="demo-banner" id="demo-banner" style="display:none">
+          🧪 <span>Demo Mode</span> — You're using sample data. Enter your Apify API key in Settings to scrape real leads.
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-info">
+              <div class="stat-label">Total Leads</div>
+              <div class="stat-value" id="stat-total">0</div>
+              <div class="stat-change up" id="stat-total-change">↑ 0 this session</div>
+            </div>
+            <div class="stat-icon blue">📋</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-info">
+              <div class="stat-label">Qualified</div>
+              <div class="stat-value" id="stat-qualified">0</div>
+              <div class="stat-change up">↑ High quality</div>
+            </div>
+            <div class="stat-icon green">✅</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-info">
+              <div class="stat-label">Avg. Rating</div>
+              <div class="stat-value" id="stat-rating">—</div>
+              <div class="stat-change up">⭐ Google Maps</div>
+            </div>
+            <div class="stat-icon orange">⭐</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-info">
+              <div class="stat-label">Scrape Runs</div>
+              <div class="stat-value" id="stat-runs">0</div>
+              <div class="stat-change up">↑ Apify runs</div>
+            </div>
+            <div class="stat-icon purple">🔄</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+          <div class="section-title"><span class="icon">⚡</span> Quick Actions</div>
+        </div>
+        <div class="quick-actions">
+          <div class="quick-action-card" onclick="showPage('generate')">
+            <div class="qa-icon blue">🚀</div>
+            <div>
+              <div class="qa-title">Generate New Leads</div>
+              <div class="qa-desc">Scrape Google Maps via Apify</div>
+            </div>
+          </div>
+          <div class="quick-action-card" onclick="showPage('leads')">
+            <div class="qa-icon green">📋</div>
+            <div>
+              <div class="qa-title">View My Leads</div>
+              <div class="qa-desc">Browse CRM table & manage leads</div>
+            </div>
+          </div>
+          <div class="quick-action-card" onclick="exportLeadsCSV()">
+            <div class="qa-icon orange">📥</div>
+            <div>
+              <div class="qa-title">Export to CSV</div>
+              <div class="qa-desc">Download all leads as CSV</div>
+            </div>
+          </div>
+          <div class="quick-action-card" onclick="exportLeadsExcel()">
+            <div class="qa-icon purple">📊</div>
+            <div>
+              <div class="qa-title">Export to Excel</div>
+              <div class="qa-desc">Download full .xlsx report</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Leads Preview -->
+        <div class="section-header" style="margin-top:8px">
+          <div class="section-title"><span class="icon">🕐</span> Recent Leads</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('leads')">View All →</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="leads-table" id="recent-leads-table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Phone</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recent-leads-body">
+                <tr>
+                  <td colspan="6">
+                    <div class="empty-state" style="padding:32px 20px">
+                      <div class="empty-icon">🔍</div>
+                      <div class="empty-title">No leads yet</div>
+                      <div class="empty-desc">Generate leads using the Apify integration to see them here.</div>
+                      <button class="btn btn-primary btn-sm" onclick="showPage('generate')">Generate First Leads</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════
+           GENERATE LEADS PAGE
+      ═══════════════════════════ -->
+      <div class="page" id="page-generate">
+        <div class="wizard-container">
+
+          <!-- Step Progress -->
+          <div class="wizard-steps">
+            <div class="wizard-step active" id="ws-1">
+              <div class="step-node">
+                <div class="step-circle">1</div>
+                <div class="step-label">API Setup</div>
+              </div>
+            </div>
+            <div class="step-connector" id="sc-1"></div>
+            <div class="wizard-step" id="ws-2">
+              <div class="step-node">
+                <div class="step-circle">2</div>
+                <div class="step-label">Industries</div>
+              </div>
+            </div>
+            <div class="step-connector" id="sc-2"></div>
+            <div class="wizard-step" id="ws-3">
+              <div class="step-node">
+                <div class="step-circle">3</div>
+                <div class="step-label">Products</div>
+              </div>
+            </div>
+            <div class="step-connector" id="sc-3"></div>
+            <div class="wizard-step" id="ws-4">
+              <div class="step-node">
+                <div class="step-circle">4</div>
+                <div class="step-label">Locations</div>
+              </div>
+            </div>
+            <div class="step-connector" id="sc-4"></div>
+            <div class="wizard-step" id="ws-5">
+              <div class="step-node">
+                <div class="step-circle">5</div>
+                <div class="step-label">Filters</div>
+              </div>
+            </div>
+            <div class="step-connector" id="sc-5"></div>
+            <div class="wizard-step" id="ws-6">
+              <div class="step-node">
+                <div class="step-circle">6</div>
+                <div class="step-label">Generate</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 1: API Key -->
+          <div class="wizard-panel active card" id="wp-1">
+            <div class="card-header">
+              <div class="section-title">🔑 Apify API Configuration</div>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Apify API Key</label>
+                <div class="input-icon-wrap">
+                  <span class="input-icon">🔑</span>
+                  <input type="password" id="apify-key-input" class="form-input" placeholder="apify_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                  <span class="input-eye" onclick="togglePwd('apify-key-input')">👁</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">
+                  Get your API key from <a href="https://console.apify.com/account/integrations" target="_blank" style="color:var(--accent)">Apify Console → Integrations</a>. Leave blank to use demo data.
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Max Results per Search Query</label>
+                <div class="range-wrap">
+                  <input type="range" id="max-results" min="5" max="200" value="50" oninput="document.getElementById('max-results-val').textContent=this.value" />
+                  <span class="range-value" id="max-results-val">50</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">More results = longer scrape time and more Apify credits used.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Google Maps Language</label>
+                <select class="form-select" id="gm-language">
+                  <option value="en">English</option>
+                  <option value="hi">Hindi</option>
+                  <option value="ar">Arabic</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <button class="btn btn-primary" onclick="wizardNext(1)">Next: Select Industries →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Industries -->
+          <div class="wizard-panel card" id="wp-2">
+            <div class="card-header">
+              <div class="section-title">🏭 Target Industries & Customer Types</div>
+              <div style="font-size:12px;color:var(--text-secondary)">Select all that apply</div>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Target Business Categories</label>
+                <div class="chip-grid" id="industries-chips">
+                  <div class="chip selected" data-val="IT Dealers" onclick="toggleChip(this)">💻 IT Dealers</div>
+                  <div class="chip selected" data-val="Laptop Dealers" onclick="toggleChip(this)">💻 Laptop Dealers</div>
+                  <div class="chip" data-val="Desktop Dealers" onclick="toggleChip(this)">🖥️ Desktop Dealers</div>
+                  <div class="chip" data-val="CCTV Dealers" onclick="toggleChip(this)">📷 CCTV Dealers</div>
+                  <div class="chip" data-val="Networking Solution Providers" onclick="toggleChip(this)">📡 Networking Solution Providers</div>
+                  <div class="chip" data-val="System Integrators" onclick="toggleChip(this)">⚙️ System Integrators</div>
+                  <div class="chip" data-val="Corporate IT Suppliers" onclick="toggleChip(this)">🏢 Corporate IT Suppliers</div>
+                  <div class="chip" data-val="PC Assemble Shops" onclick="toggleChip(this)">🔧 PC Assemble Shops</div>
+                  <div class="chip" data-val="Gaming PC Shops" onclick="toggleChip(this)">🎮 Gaming PC Shops</div>
+                  <div class="chip" data-val="Computer Accessories Shops" onclick="toggleChip(this)">🖱️ Computer Accessories Shops</div>
+                  <div class="chip" data-val="Printer Dealers" onclick="toggleChip(this)">🖨️ Printer Dealers</div>
+                  <div class="chip" data-val="Security Solution Providers" onclick="toggleChip(this)">🛡️ Security Solution Providers</div>
+                  <div class="chip" data-val="Electronics Retailers" onclick="toggleChip(this)">🛒 Electronics Retailers</div>
+                  <div class="chip" data-val="B2B IT Resellers" onclick="toggleChip(this)">🔄 B2B IT Resellers</div>
+                  <div class="chip" data-val="Computer Shops" onclick="toggleChip(this)">🏪 Computer Shops</div>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="form-group">
+                <label class="form-label">Business Type Focus</label>
+                <div class="chip-grid" id="biz-type-chips">
+                  <div class="chip selected" data-val="B2B" onclick="toggleChip(this)">B2B</div>
+                  <div class="chip" data-val="Wholesale" onclick="toggleChip(this)">Wholesale</div>
+                  <div class="chip" data-val="Distributor" onclick="toggleChip(this)">Distributor</div>
+                  <div class="chip" data-val="Reseller" onclick="toggleChip(this)">Reseller</div>
+                  <div class="chip" data-val="Retail" onclick="toggleChip(this)">Retail</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <button class="btn btn-secondary" onclick="wizardPrev(2)">← Back</button>
+                <button class="btn btn-primary" onclick="wizardNext(2)">Next: Product Categories →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Products -->
+          <div class="wizard-panel card" id="wp-3">
+            <div class="card-header">
+              <div class="section-title">📦 Product Categories of Interest</div>
+              <div style="font-size:12px;color:var(--text-secondary)">What products are these leads interested in?</div>
+            </div>
+            <div class="card-body">
+              <div class="chip-grid" id="products-chips">
+                <div class="chip selected" data-val="Laptops" onclick="toggleChip(this)">💻 Laptops</div>
+                <div class="chip selected" data-val="Desktops" onclick="toggleChip(this)">🖥️ Desktops</div>
+                <div class="chip" data-val="Custom PC Assembly" onclick="toggleChip(this)">🔧 Custom PC Assembly</div>
+                <div class="chip" data-val="Computer Accessories" onclick="toggleChip(this)">🖱️ Computer Accessories</div>
+                <div class="chip" data-val="CCTV Surveillance" onclick="toggleChip(this)">📷 CCTV & Surveillance</div>
+                <div class="chip" data-val="IT Infrastructure" onclick="toggleChip(this)">🌐 IT Infrastructure</div>
+                <div class="chip" data-val="Servers" onclick="toggleChip(this)">🗄️ Servers</div>
+                <div class="chip" data-val="Networking Equipment" onclick="toggleChip(this)">📡 Networking Equipment</div>
+                <div class="chip" data-val="Printers Scanners" onclick="toggleChip(this)">🖨️ Printers & Scanners</div>
+                <div class="chip" data-val="UPS Power Backup" onclick="toggleChip(this)">🔋 UPS & Power Backup</div>
+                <div class="chip" data-val="Storage Solutions" onclick="toggleChip(this)">💾 Storage Solutions</div>
+                <div class="chip" data-val="Software Licenses" onclick="toggleChip(this)">📀 Software Licenses</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:16px">
+                <button class="btn btn-secondary" onclick="wizardPrev(3)">← Back</button>
+                <button class="btn btn-primary" onclick="wizardNext(3)">Next: Locations →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Locations -->
+          <div class="wizard-panel card" id="wp-4">
+            <div class="card-header">
+              <div class="section-title">📍 Target Locations</div>
+              <div style="font-size:12px;color:var(--text-secondary)">Add cities, regions, or countries</div>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Cities / Regions (press Enter to add)</label>
+                <div class="tag-input-wrap" id="location-tags-wrap" onclick="focusTagInput()">
+                  <input type="text" class="tag-input-field" id="location-tag-input" placeholder="e.g. Mumbai, Delhi, Bangalore..." onkeydown="handleTagInput(event,'location-tags')" />
+                </div>
+                <div id="location-tags" style="display:none"></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Press Enter after each location. You can add multiple cities.</div>
+              </div>
+
+              <div class="form-group" style="margin-top:8px">
+                <label class="form-label">Quick Add — Target Regions (MH & Goa)</label>
+                <div class="chip-grid">
+                  <div class="chip" onclick="quickAddLocation('Mumbai')">📍 Mumbai</div>
+                  <div class="chip" onclick="quickAddLocation('Pune')">📍 Pune</div>
+                  <div class="chip" onclick="quickAddLocation('Nagpur')">📍 Nagpur</div>
+                  <div class="chip" onclick="quickAddLocation('Nashik')">📍 Nashik</div>
+                  <div class="chip" onclick="quickAddLocation('Chhatrapati Sambhajinagar')">📍 Chh. Sambhajinagar</div>
+                  <div class="chip" onclick="quickAddLocation('Kolhapur')">📍 Kolhapur</div>
+                  <div class="chip" onclick="quickAddLocation('Goa')">📍 Goa</div>
+                  <div class="chip" onclick="quickAddLocation('Navi Mumbai')">📍 Navi Mumbai</div>
+                  <div class="chip" onclick="quickAddLocation('Thane')">📍 Thane</div>
+                  <div class="chip" onclick="quickAddLocation('Amravati')">📍 Amravati</div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Country</label>
+                <select class="form-select" id="country-select">
+                  <option value="India">India</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="UAE">UAE</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Canada">Canada</option>
+                </select>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <button class="btn btn-secondary" onclick="wizardPrev(4)">← Back</button>
+                <button class="btn btn-primary" onclick="wizardNext(4)">Next: Lead Filters →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Filters -->
+          <div class="wizard-panel card" id="wp-5">
+            <div class="card-header">
+              <div class="section-title">🎛️ Lead Qualification Filters</div>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+                <div class="form-group">
+                  <label class="form-label">Minimum Google Rating</label>
+                  <div class="range-wrap">
+                    <input type="range" id="min-rating" min="1" max="5" step="0.5" value="3.5" oninput="document.getElementById('min-rating-val').textContent=parseFloat(this.value).toFixed(1)+'⭐'" />
+                    <span class="range-value" id="min-rating-val">3.5⭐</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Minimum Reviews Count</label>
+                  <input type="number" class="form-input" id="min-reviews" value="5" min="0" placeholder="e.g. 10" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Company Size (Employees)</label>
+                  <select class="form-select" id="company-size">
+                    <option value="any">Any size</option>
+                    <option value="micro">Micro (1–10)</option>
+                    <option value="small">Small (11–50)</option>
+                    <option value="medium">Medium (51–200)</option>
+                    <option value="large">Large (201–1000)</option>
+                    <option value="enterprise">Enterprise (1000+)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Lead Status on Import</label>
+                  <select class="form-select" id="default-status">
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Include Keywords (comma separated)</label>
+                <input type="text" class="form-input" id="include-keywords" placeholder="e.g. IT, computer, technology, distributor" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Exclude Keywords (comma separated)</label>
+                <input type="text" class="form-input" id="exclude-keywords" placeholder="e.g. restaurant, salon, medical" />
+              </div>
+
+              <div class="form-group">
+                <div class="toggle-wrap">
+                  <div>
+                    <div class="toggle-label">Skip Duplicate Leads</div>
+                    <div class="toggle-sub">Don't import leads already in your database</div>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="skip-duplicates" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  </label>
+                </div>
+                <div class="toggle-wrap">
+                  <div>
+                    <div class="toggle-label">Exclude Closed Businesses</div>
+                    <div class="toggle-sub">Filter out permanently closed businesses</div>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="exclude-closed" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-wrap">
+                  <div>
+                    <div class="toggle-label">Only Import Leads with Phone Numbers</div>
+                    <div class="toggle-sub">Filter out businesses without contact info</div>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="require-phone" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-wrap">
+                  <div>
+                    <div class="toggle-label">Only Import Leads with Website</div>
+                    <div class="toggle-sub">Filter for businesses with an online presence</div>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="require-website" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <button class="btn btn-secondary" onclick="wizardPrev(5)">← Back</button>
+                <button class="btn btn-primary" onclick="wizardNext(5)">Next: Review & Generate →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Generate -->
+          <div class="wizard-panel card" id="wp-6">
+            <div class="card-header">
+              <div class="section-title">🚀 Review & Generate Leads</div>
+              <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <button class="btn btn-primary" style="flex: 1" onclick="startApifyGenerate()">⚡ Generate Leads Now</button>
+                <button class="btn btn-secondary" id="demo-mode-btn" style="flex: 1" onclick="startDemoMode()">👀 Run Demo Mode (Free)</button>
+              </div>
+              <div class="info-box" id="demo-mode-tip" style="margin-bottom: 20px;">
+                <div class="info-icon">💡</div>
+                <div><strong>No API key?</strong> Just click the button above to run in Demo Mode and see how it works with realistic sample data.</div>
+              </div>
+            </div>
+            <div class="card-body">
+
+              <!-- Summary -->
+              <div id="generate-summary" style="margin-bottom:24px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="summary-grid"></div>
+              </div>
+
+              <!-- Queries Preview -->
+              <div class="form-group">
+                <label class="form-label">Search Queries to be Sent to Google Maps</label>
+                <div id="query-preview" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;max-height:150px;overflow-y:auto;font-size:12px;color:var(--text-secondary);line-height:2"></div>
+              </div>
+
+              <!-- Generate Button + Progress -->
+              <div id="generate-idle">
+                <button class="btn btn-primary btn-full btn-lg" id="generate-btn" onclick="startGenerate()">
+                  ⚡ Generate Leads Now
+                </button>
+              </div>
+
+              <div id="generate-running" style="display:none">
+                <div class="generate-progress">
+                  <div class="generate-icon">⚡</div>
+                  <div class="generate-status" id="gen-status">Initializing Apify run...</div>
+                  <div class="generate-substatus" id="gen-substatus">Starting Google Maps Scraper actor</div>
+                  <div class="generate-count" id="gen-count">0</div>
+                  <div class="generate-count-label">Leads Found So Far</div>
+                  <div style="max-width:400px;margin:0 auto">
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar" id="gen-progress-bar" style="width:5%"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:4px">
+                      <span id="gen-progress-label">Processing...</span>
+                      <span id="gen-progress-pct">5%</span>
+                    </div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" style="margin-top:20px" onclick="cancelGenerate()">Cancel Run</button>
+                </div>
+              </div>
+
+              <div id="generate-done" style="display:none">
+                <div class="generate-progress">
+                  <div class="generate-icon" style="animation:none">✅</div>
+                  <div class="generate-status">Generation Complete!</div>
+                  <div class="generate-count" id="gen-done-count">0</div>
+                  <div class="generate-count-label">Leads Successfully Imported</div>
+                  <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+                    <button class="btn btn-primary" onclick="showPage('leads')">View Leads in CRM →</button>
+                    <button class="btn btn-secondary" onclick="resetWizard()">Generate Again</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:flex-start;margin-top:16px" id="generate-back-btn">
+                <button class="btn btn-secondary btn-sm" onclick="wizardPrev(6)">← Back to Filters</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════
+           LEADS CRM PAGE
+      ═══════════════════════════ -->
+      <div class="page" id="page-leads">
+        <div class="card">
+
+          <!-- Toolbar -->
+          <div class="table-toolbar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="form-input" id="leads-search" placeholder="Search company, phone, location..." oninput="filterLeads()" />
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="showPage('generate')">⚡ Generate More</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportLeadsCSV()">📥 CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportLeadsExcel()">📊 Excel</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmClearLeads()">🗑️ Clear All</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-row">
+            <select class="filter-select" id="filter-status" onchange="filterLeads()">
+              <option value="">All Statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="proposal">Proposal Sent</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+            <select class="filter-select" id="filter-category" onchange="filterLeads()">
+              <option value="">All Categories</option>
+            </select>
+            <select class="filter-select" id="filter-location" onchange="filterLeads()">
+              <option value="">All Locations</option>
+            </select>
+            <select class="filter-select" id="filter-rating" onchange="filterLeads()">
+              <option value="">Any Rating</option>
+              <option value="4">4⭐ & above</option>
+              <option value="3">3⭐ & above</option>
+              <option value="2">2⭐ & above</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Clear Filters</button>
+          </div>
+
+          <!-- Table -->
+          <div class="table-wrap">
+            <table class="leads-table" id="leads-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="select-all-leads" onclick="toggleSelectAll(this)" /></th>
+                  <th onclick="sortLeads('name')">Company <span class="sort-icon">⇅</span></th>
+                  <th onclick="sortLeads('phone')">Phone <span class="sort-icon">⇅</span></th>
+                  <th>Email</th>
+                  <th>Website</th>
+                  <th onclick="sortLeads('address')">Address <span class="sort-icon">⇅</span></th>
+                  <th onclick="sortLeads('rating')">Rating <span class="sort-icon">⇅</span></th>
+                  <th onclick="sortLeads('category')">Category <span class="sort-icon">⇅</span></th>
+                  <th onclick="sortLeads('location')">Location <span class="sort-icon">⇅</span></th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body">
+                <tr>
+                  <td colspan="12">
+                    <div class="empty-state">
+                      <div class="empty-icon">📋</div>
+                      <div class="empty-title">No leads found</div>
+                      <div class="empty-desc">Generate leads using the Apify integration to populate your CRM.</div>
+                      <button class="btn btn-primary btn-sm" onclick="showPage('generate')">⚡ Generate Leads</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="leads-pagination">
+            <div class="pagination-info" id="pagination-info">Showing 0 leads</div>
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════
+           SCRAPE HISTORY PAGE
+      ═══════════════════════════ -->
+      <div class="page" id="page-history">
+        <div class="section-header">
+          <div class="section-title">🕐 Scrape History</div>
+          <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear History</button>
+        </div>
+        <div class="card" id="history-card">
+          <div id="history-list">
+            <div class="empty-state">
+              <div class="empty-icon">🕐</div>
+              <div class="empty-title">No scrape history</div>
+              <div class="empty-desc">Your Apify scrape runs will appear here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════
+           ANALYTICS PAGE
+      ═══════════════════════════ -->
+      <div class="page" id="page-analytics">
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-info">
+              <div class="stat-label">Total Leads</div>
+              <div class="stat-value" id="ana-total">0</div>
+            </div>
+            <div class="stat-icon blue">📋</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-info">
+              <div class="stat-label">Won Deals</div>
+              <div class="stat-value" id="ana-won">0</div>
+            </div>
+            <div class="stat-icon green">🏆</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-info">
+              <div class="stat-label">Avg. Rating</div>
+              <div class="stat-value" id="ana-rating">—</div>
+            </div>
+            <div class="stat-icon orange">⭐</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-info">
+              <div class="stat-label">Duplicates Skipped</div>
+              <div class="stat-value" id="ana-dupes">0</div>
+            </div>
+            <div class="stat-icon purple">🔁</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><div class="section-title">📊 Leads by Status</div></div>
+            <div class="card-body" id="status-breakdown"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="section-title">📍 Leads by Location</div></div>
+            <div class="card-body" id="location-breakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════
+           SETTINGS PAGE
+      ═══════════════════════════ -->
+      <div class="page" id="page-settings">
+        <div class="settings-grid">
+
+          <div class="settings-section">
+            <h3 class="section-title">API Configuration</h3>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+              Uses Apify to scrape Google Maps. Costs $0.50 minimum per run + $0.004 per lead.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Apify API Key</label>
+              <div class="input-icon-wrap">
+                <span class="input-icon">🔑</span>
+                <input type="password" id="settings-apify-key" class="form-input" placeholder="apify_api_..." />
+                <span class="input-eye" onclick="togglePwd('settings-apify-key')">👁</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apify Actor ID <span style="color:var(--text-muted);font-weight:400;font-size:11px">(leave blank for auto-detect)</span></label>
+              <input type="text" id="settings-actor-id" class="form-input" placeholder="e.g. nwua9Gu5YkAT85Lla or apify~google-maps-scraper" />
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Find actor IDs at <a href="https://console.apify.com/store" target="_blank" style="color:var(--accent)">apify.com/store</a></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save API Key</button>
+              <button class="btn btn-secondary btn-sm" onclick="testApifyConnection()">🔌 Test Connection</button>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <div class="settings-section-title">👤 Account</div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" id="settings-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="settings-email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Company</label>
+              <input type="text" class="form-input" id="settings-company" />
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Profile</button>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">🎨 Preferences</div>
+            <div class="toggle-wrap">
+              <div>
+                <div class="toggle-label">Dark Mode</div>
+                <div class="toggle-sub">Toggle between dark and light theme</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="dark-mode-toggle" checked onchange="toggleTheme()" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-wrap">
+              <div>
+                <div class="toggle-label">Auto-detect Duplicates</div>
+                <div class="toggle-sub">Skip leads already in your database</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="settings-dupes" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-wrap">
+              <div>
+                <div class="toggle-label">Email Notifications</div>
+                <div class="toggle-sub">Get notified when scrape is done</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="settings-notif" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">💳 Subscription</div>
+            <div class="info-row">
+              <div class="info-label">Plan</div>
+              <div class="info-value" id="settings-plan-name">Free</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Leads Used</div>
+              <div class="info-value" id="settings-leads-used">0 / 50</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Runs</div>
+              <div class="info-value" id="settings-runs">0</div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="progress-bar-wrap" style="margin-bottom:8px">
+                <div class="progress-bar" id="plan-usage-bar" style="width:0%;background:var(--gradient-success)"></div>
+              </div>
+              <button class="btn btn-primary btn-sm btn-full" style="margin-top:8px">⬆️ Upgrade to Pro — $49/mo</button>
+            </div>
+          </div>
+
+          <div class="settings-section" style="grid-column: 1 / -1">
+            <div class="settings-section-title">🗑️ Data Management</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="exportLeadsCSV()">📥 Export CSV</button>
+              <button class="btn btn-secondary btn-sm" onclick="exportLeadsExcel()">📊 Export Excel</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmClearLeads()">🗑️ Clear All Leads</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════════ -->
+
+<!-- Lead Detail Modal -->
+<div class="modal-overlay" id="modal-lead-detail">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-lead-title">Lead Details</div>
+      <button class="modal-close" onclick="closeModal('modal-lead-detail')">✕</button>
+    </div>
+    <div id="modal-lead-body"></div>
+  </div>
+</div>
+
+<!-- Confirm Clear Modal -->
+<div class="modal-overlay" id="modal-confirm-clear">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Clear All Leads?</div>
+      <button class="modal-close" onclick="closeModal('modal-confirm-clear')">✕</button>
+    </div>
+    <p style="color:var(--text-secondary);margin-bottom:24px">This will permanently delete all <strong id="clear-count" style="color:var(--text-primary)">0</strong> leads from your database. This action cannot be undone.</p>
+    <div style="display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-confirm-clear')">Cancel</button>
+      <button class="btn btn-danger" onclick="clearAllLeads()">Delete All Leads</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/leads.js" defer></script>
+  <script src="js/apify.js" defer></script>
+  <script src="js/export.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/animations.js" defer></script>
+</body>
+</html>
