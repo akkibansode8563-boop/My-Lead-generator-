@@ -135,7 +135,7 @@ function showPage(pageId) {
   if (pageId === 'analytics') renderAnalytics();
   if (pageId === 'dashboard') renderDashboard();
   if (pageId === 'settings') loadSettingsPage();
-  if (pageId === 'generate') updateQueryPreview();
+  if (pageId === 'generate') { updateQueryPreview(); selectRegion(activeRegion || 'nagpur'); }
 }
 
 // ── Wizard Navigation ─────────────────────────
@@ -256,6 +256,95 @@ function quickAddLocation(city) {
   addTag(city);
   showToast(`${city} added to locations`, 'info', 1500);
 }
+
+// ── Region → City Data (Maharashtra & Goa) ────
+const MH_REGIONS = {
+  nagpur: {
+    label: 'Nagpur Region',
+    cities: ['Nagpur', 'Wardha', 'Chandrapur', 'Bhandara', 'Gondia', 'Gadchiroli', 'Amravati', 'Akola', 'Yavatmal', 'Washim']
+  },
+  nashik: {
+    label: 'Nashik Region',
+    cities: ['Nashik', 'Ahmednagar', 'Dhule', 'Jalgaon', 'Nandurbar', 'Malegaon']
+  },
+  pune: {
+    label: 'Pune Region',
+    cities: ['Pune', 'Pimpri Chinchwad', 'Chakan', 'Talegaon', 'Hinjawadi', 'Baramati', 'Satara', 'Sangli', 'Solapur']
+  },
+  csn: {
+    label: 'Chh. Sambhajinagar Region',
+    cities: ['Chhatrapati Sambhajinagar', 'Jalna', 'Beed', 'Latur', 'Osmanabad', 'Nanded', 'Parbhani', 'Hingoli']
+  },
+  kolhapur: {
+    label: 'Kolhapur & Goa Region',
+    cities: ['Kolhapur', 'Ratnagiri', 'Sindhudurg', 'Panaji', 'Vasco da Gama', 'Margao', 'Mapusa', 'Ponda']
+  },
+  mumbai: {
+    label: 'Mumbai Region',
+    cities: ['Mumbai', 'Navi Mumbai', 'Thane', 'Kalyan', 'Dombivli', 'Vasai', 'Virar', 'Palghar', 'Bhiwandi', 'Mira Bhayandar']
+  }
+};
+
+let activeRegion = 'nagpur';
+
+function selectRegion(regionKey) {
+  activeRegion = regionKey;
+
+  // Update region tab chips
+  document.querySelectorAll('#region-tabs .chip').forEach(c => {
+    c.classList.toggle('selected', c.getAttribute('data-region') === regionKey);
+  });
+
+  // Update city picker label
+  const region = MH_REGIONS[regionKey];
+  document.getElementById('city-picker-label').textContent = `Cities in ${region.label}`;
+
+  // Render city chips
+  const cityChips = document.getElementById('city-chips');
+  cityChips.innerHTML = region.cities.map(city => `
+    <div class="chip${locationTags.includes(city) ? ' selected' : ''}"
+         onclick="toggleCityChip(this, '${city}')">${city}</div>
+  `).join('');
+}
+
+function toggleCityChip(el, city) {
+  if (locationTags.includes(city)) {
+    removeTag(city);
+    el.classList.remove('selected');
+  } else {
+    addTag(city);
+    el.classList.add('selected');
+  }
+  updateLocationCount();
+}
+
+function addAllRegionCities() {
+  const region = MH_REGIONS[activeRegion];
+  region.cities.forEach(city => {
+    if (!locationTags.includes(city)) addTag(city);
+  });
+  selectRegion(activeRegion); // refresh chip states
+  updateLocationCount();
+  showToast(`All ${region.label} cities added`, 'success', 2000);
+}
+
+function clearRegionCities() {
+  const region = MH_REGIONS[activeRegion];
+  region.cities.forEach(city => removeTag(city));
+  selectRegion(activeRegion);
+  updateLocationCount();
+  showToast(`${region.label} cities removed`, 'info', 1500);
+}
+
+function updateLocationCount() {
+  const el = document.getElementById('location-count');
+  if (el) el.textContent = `${locationTags.length} ${locationTags.length === 1 ? 'city' : 'cities'}`;
+}
+
+// Patch addTag/removeTag to also update count badge
+const _origAddTag = addTag;
+const _origRemoveTag = removeTag;
+
 
 // ── Query Preview Builder ─────────────────────
 function updateQueryPreview() {

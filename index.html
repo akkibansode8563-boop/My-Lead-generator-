@@ -481,56 +481,60 @@
           <!-- Step 4: Locations -->
           <div class="wizard-panel card" id="wp-4">
             <div class="card-header">
-              <div class="section-title">📍 Target Locations</div>
-              <div style="font-size:12px;color:var(--text-secondary)">Add cities, regions, or countries</div>
+              <div class="section-title">&#128205; Target Regions &amp; Cities</div>
+              <div style="font-size:12px;color:var(--text-secondary)">Maharashtra &amp; Goa — Select regions and cities</div>
             </div>
             <div class="card-body">
+
+              <!-- Region Tabs -->
               <div class="form-group">
-                <label class="form-label">Cities / Regions (press Enter to add)</label>
+                <label class="form-label">1. Pick a Region</label>
+                <div class="chip-grid" id="region-tabs">
+                  <div class="chip selected" data-region="nagpur"   onclick="selectRegion('nagpur')">&#127824; Nagpur Region</div>
+                  <div class="chip"          data-region="nashik"   onclick="selectRegion('nashik')">&#127825; Nashik Region</div>
+                  <div class="chip"          data-region="pune"     onclick="selectRegion('pune')">&#128309; Pune Region</div>
+                  <div class="chip"          data-region="csn"      onclick="selectRegion('csn')">&#128310; Chh. Sambhajinagar</div>
+                  <div class="chip"          data-region="kolhapur" onclick="selectRegion('kolhapur')">&#128994; Kolhapur &amp; Goa</div>
+                  <div class="chip"          data-region="mumbai"   onclick="selectRegion('mumbai')">&#128308; Mumbai Region</div>
+                </div>
+              </div>
+
+              <!-- City picker for selected region -->
+              <div class="form-group" id="city-picker-wrap">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <label class="form-label" style="margin:0" id="city-picker-label">Cities in Nagpur Region</label>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn btn-ghost btn-sm" onclick="addAllRegionCities()">+ Add All</button>
+                    <button class="btn btn-ghost btn-sm" onclick="clearRegionCities()">&#10005; Remove All</button>
+                  </div>
+                </div>
+                <div class="chip-grid" id="city-chips"></div>
+              </div>
+
+              <!-- Selected cities shown as tags -->
+              <div class="form-group">
+                <label class="form-label">2. Selected Cities &nbsp;<span id="location-count" style="color:var(--accent);font-weight:700">0 cities</span></label>
                 <div class="tag-input-wrap" id="location-tags-wrap" onclick="focusTagInput()">
-                  <input type="text" class="tag-input-field" id="location-tag-input" placeholder="e.g. Mumbai, Delhi, Bangalore..." onkeydown="handleTagInput(event,'location-tags')" />
+                  <input type="text" class="tag-input-field" id="location-tag-input"
+                         placeholder="Or type a custom city/upcountry area and press Enter..."
+                         onkeydown="handleTagInput(event,'location-tags')" />
                 </div>
                 <div id="location-tags" style="display:none"></div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Press Enter after each location. You can add multiple cities.</div>
-              </div>
-
-              <div class="form-group" style="margin-top:8px">
-                <label class="form-label">Quick Add — Target Regions (MH & Goa)</label>
-                <div class="chip-grid">
-                  <div class="chip" onclick="quickAddLocation('Mumbai')">📍 Mumbai</div>
-                  <div class="chip" onclick="quickAddLocation('Pune')">📍 Pune</div>
-                  <div class="chip" onclick="quickAddLocation('Nagpur')">📍 Nagpur</div>
-                  <div class="chip" onclick="quickAddLocation('Nashik')">📍 Nashik</div>
-                  <div class="chip" onclick="quickAddLocation('Chhatrapati Sambhajinagar')">📍 Chh. Sambhajinagar</div>
-                  <div class="chip" onclick="quickAddLocation('Kolhapur')">📍 Kolhapur</div>
-                  <div class="chip" onclick="quickAddLocation('Goa')">📍 Goa</div>
-                  <div class="chip" onclick="quickAddLocation('Navi Mumbai')">📍 Navi Mumbai</div>
-                  <div class="chip" onclick="quickAddLocation('Thane')">📍 Thane</div>
-                  <div class="chip" onclick="quickAddLocation('Amravati')">📍 Amravati</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+                  &#9989; Only leads from selected cities will be generated. Results outside Maharashtra &amp; Goa are automatically excluded.
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Country</label>
-                <select class="form-select" id="country-select">
-                  <option value="India">India</option>
-                  <option value="United States">United States</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="UAE">UAE</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="Australia">Australia</option>
-                  <option value="Canada">Canada</option>
-                </select>
               </div>
 
               <div style="display:flex;justify-content:space-between;margin-top:8px">
-                <button class="btn btn-secondary" onclick="wizardPrev(4)">← Back</button>
-                <button class="btn btn-primary" onclick="wizardNext(4)">Next: Lead Filters →</button>
+                <button class="btn btn-secondary" onclick="wizardPrev(4)">&#8592; Back</button>
+                <button class="btn btn-primary" onclick="wizardNext(4)">Next: Lead Filters &#8594;</button>
               </div>
             </div>
           </div>
 
+
           <!-- Step 5: Filters -->
+
           <div class="wizard-panel card" id="wp-5">
             <div class="card-header">
               <div class="section-title">🎛️ Lead Qualification Filters</div>
@@ -729,6 +733,18 @@
 
           <!-- Filters -->
           <div class="filter-row">
+            <select class="filter-select" id="filter-region" onchange="onRegionFilterChange()">
+              <option value="">All Regions</option>
+              <option value="nagpur">Nagpur Region</option>
+              <option value="nashik">Nashik Region</option>
+              <option value="pune">Pune Region</option>
+              <option value="csn">Chh. Sambhajinagar</option>
+              <option value="kolhapur">Kolhapur &amp; Goa</option>
+              <option value="mumbai">Mumbai Region</option>
+            </select>
+            <select class="filter-select" id="filter-city" onchange="filterLeads()">
+              <option value="">All Cities</option>
+            </select>
             <select class="filter-select" id="filter-status" onchange="filterLeads()">
               <option value="">All Statuses</option>
               <option value="new">New</option>
@@ -741,16 +757,13 @@
             <select class="filter-select" id="filter-category" onchange="filterLeads()">
               <option value="">All Categories</option>
             </select>
-            <select class="filter-select" id="filter-location" onchange="filterLeads()">
-              <option value="">All Locations</option>
-            </select>
             <select class="filter-select" id="filter-rating" onchange="filterLeads()">
               <option value="">Any Rating</option>
-              <option value="4">4⭐ & above</option>
-              <option value="3">3⭐ & above</option>
-              <option value="2">2⭐ & above</option>
+              <option value="4">4+ Stars</option>
+              <option value="3">3+ Stars</option>
+              <option value="2">2+ Stars</option>
             </select>
-            <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Clear Filters</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear Filters</button>
           </div>
 
           <!-- Table -->
@@ -1029,3 +1042,4 @@
   <script src="js/animations.js" defer></script>
 </body>
 </html>
+

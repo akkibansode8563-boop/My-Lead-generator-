@@ -150,18 +150,27 @@ let sortDir = 'desc';
 
 function filterLeads() {
   const search   = (document.getElementById('leads-search')?.value || '').toLowerCase();
+  const region   = document.getElementById('filter-region')?.value || '';
+  const city     = document.getElementById('filter-city')?.value || '';
   const status   = document.getElementById('filter-status')?.value || '';
   const category = document.getElementById('filter-category')?.value || '';
-  const location = document.getElementById('filter-location')?.value || '';
   const rating   = parseFloat(document.getElementById('filter-rating')?.value || '0');
+
+  // Build set of allowed cities when a region is selected
+  const regionCities = region && typeof MH_REGIONS !== 'undefined'
+    ? MH_REGIONS[region]?.cities || []
+    : [];
 
   const all = getLeads();
 
   filteredLeads = all.filter(l => {
     if (status   && l.status !== status)         return false;
     if (category && l.category !== category)     return false;
-    if (location && l.location !== location)     return false;
     if (rating   && (l.rating || 0) < rating)   return false;
+    // City filter (exact)
+    if (city && (l.location || '').toLowerCase() !== city.toLowerCase()) return false;
+    // Region filter: city must be in region's city list
+    if (regionCities.length && !regionCities.some(rc => (l.location || '').toLowerCase().includes(rc.toLowerCase()))) return false;
     if (search) {
       const hay = `${l.name} ${l.phone} ${l.email} ${l.address} ${l.category} ${l.location} ${l.website}`.toLowerCase();
       if (!hay.includes(search)) return false;
@@ -196,30 +205,44 @@ function sortLeads(field) {
 }
 
 function clearFilters() {
-  document.getElementById('leads-search').value       = '';
-  document.getElementById('filter-status').value      = '';
-  document.getElementById('filter-category').value    = '';
-  document.getElementById('filter-location').value    = '';
-  document.getElementById('filter-rating').value      = '';
+  document.getElementById('leads-search').value    = '';
+  document.getElementById('filter-region').value   = '';
+  document.getElementById('filter-city').value     = '';
+  document.getElementById('filter-status').value   = '';
+  document.getElementById('filter-category').value = '';
+  document.getElementById('filter-rating').value   = '';
+  // Reset city dropdown to All Cities
+  const citySel = document.getElementById('filter-city');
+  if (citySel) citySel.innerHTML = '<option value="">All Cities</option>';
   filterLeads();
 }
 
-// ── Populate filter dropdowns ─────────────────
+// Populate city dropdown when region changes
+function onRegionFilterChange() {
+  const region = document.getElementById('filter-region')?.value || '';
+  const citySel = document.getElementById('filter-city');
+  if (!citySel) return;
+
+  if (!region || typeof MH_REGIONS === 'undefined') {
+    citySel.innerHTML = '<option value="">All Cities</option>';
+  } else {
+    const cities = MH_REGIONS[region]?.cities || [];
+    citySel.innerHTML = '<option value="">All Cities</option>' +
+      cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+  filterLeads();
+}
+
+// Populate filter dropdowns
 function populateFilterDropdowns() {
   const leads = getLeads();
   const categories = [...new Set(leads.map(l => l.category).filter(Boolean))].sort();
-  const locations  = [...new Set(leads.map(l => l.location).filter(Boolean))].sort();
 
   const catSel = document.getElementById('filter-category');
-  const locSel = document.getElementById('filter-location');
-
   if (catSel) {
+    const curCat = catSel.value;
     catSel.innerHTML = '<option value="">All Categories</option>' +
-      categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  }
-  if (locSel) {
-    locSel.innerHTML = '<option value="">All Locations</option>' +
-      locations.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+      categories.map(c => `<option value="${esc(c)}"${c===curCat?' selected':''}>${esc(c)}</option>`).join('');
   }
 }
 
