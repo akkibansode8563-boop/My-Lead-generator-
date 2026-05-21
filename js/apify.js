@@ -98,7 +98,7 @@ async function startApifyGenerate() {
     locations:      [...locationTags],
     country:        'India',
     language:       document.getElementById('gm-language')?.value || 'en',
-    maxResults:     parseInt(document.getElementById('max-results')?.value || 50),
+    maxResults:     parseInt(document.getElementById('max-results')?.value || 200),
     minRating:      parseFloat(document.getElementById('min-rating')?.value || 3.5),
     minReviews:     parseInt(document.getElementById('min-reviews')?.value || 5),
     companySize:    document.getElementById('company-size')?.value || 'any',
