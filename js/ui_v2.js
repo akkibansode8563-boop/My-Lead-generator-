@@ -135,8 +135,18 @@ function showPage(pageId) {
   if (pageId === 'analytics') renderAnalytics();
   if (pageId === 'dashboard') renderDashboard();
   if (pageId === 'settings') loadSettingsPage();
-  if (pageId === 'generate') { updateQueryPreview(); selectRegion(activeRegion || 'nagpur'); }
+  if (pageId === 'generate') {
+    updateQueryPreview();
+    if (typeof onStateChange === 'function') {
+      onStateChange(document.getElementById('geo-state')?.value || 'Delhi NCR');
+    }
+  }
 }
+
+window.showPage = showPage;
+window.wizardNext = wizardNext;
+window.wizardPrev = wizardPrev;
+window.goToWizardStep = goToWizardStep;
 
 // ── Wizard Navigation ─────────────────────────
 let currentWizardStep = 1;

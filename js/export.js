@@ -366,3 +366,6 @@ function avgRating(leads) {
   if (!rated.length) return 'N/A';
   return (rated.reduce((s,l) => s + parseFloat(l.rating), 0) / rated.length).toFixed(1);
 }
+
+window.exportLeadsCSV = exportLeadsCSV;
+window.exportLeadsExcel = exportLeadsExcel;
