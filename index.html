@@ -485,8 +485,9 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">2. Target IT Market Hub / Area</label>
-                  <input type="text" class="form-input" id="geo-market-area" placeholder="e.g. Nehru Place, Lamington Rd, SP Rd..." />
+                  <label class="form-label">2. Recommended IT Market Hub / Territory</label>
+                  <input type="text" class="form-input" id="geo-market-area" list="market-area-suggestions" placeholder="Select or type IT Market Hub (e.g. Nehru Place, Ritchie St)..." autocomplete="off" />
+                  <datalist id="market-area-suggestions"></datalist>
                 </div>
                 <div class="form-group">
                   <label class="form-label">3. Scan Radius (km)</label>

@@ -277,7 +277,23 @@ const STATE_CITIES = {
   'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain'],
   'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam'],
   'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
-  'All India': ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Chennai', 'Hyderabad', 'Ahmedabad', 'Pune', 'Jaipur', 'Lucknow']
+// ── Recommended IT Market Hubs / Territory Places Data ────
+const STATE_HUBS = {
+  'Delhi NCR': ['Nehru Place', 'Wazirpur Industrial Area', 'Lajpat Rai Market / Chandni Chowk', 'DLF Cyber City, Gurugram', 'Noida Sector 18 & 62 IT Hub', 'Janakpuri District Centre'],
+  'Maharashtra': ['Lamington Road, Mumbai', 'Fort / CST IT Market, Mumbai', 'MIDC & Andheri East, Mumbai', 'Vashi Plaza, Navi Mumbai', 'Deccan Gymkhana & FC Road, Pune', 'Tilak Road, Pune', 'Dhantoli & Itwari, Nagpur', 'Canada Corner, Nashik'],
+  'Karnataka': ['SP Road (Sadarth Patrappa Rd), Bengaluru', 'Indiranagar & Koramangala, Bengaluru', 'Whitefield & Electronic City, Bengaluru', 'Jayanagar & BTM Layout, Bengaluru', 'Devaraja Market, Mysuru'],
+  'Gujarat': ['CG Road & Ashram Road, Ahmedabad', 'Nehru Bridge IT Hub, Ahmedabad', 'Nanpura & Ring Road, Surat', 'Alkapuri, Vadodara', 'Yagnik Road, Rajkot'],
+  'Tamil Nadu': ['Ritchie Street, Chennai', 'Mount Road & T. Nagar, Chennai', 'Gandhipuram, Coimbatore', 'Town Hall, Madurai'],
+  'Telangana': ['CTC (Chenoy Trade Centre), Secunderabad', 'Park Lane IT Market, Secunderabad', 'HITEC City & Gachibowli, Hyderabad', 'Ameerpet & Begumpet, Hyderabad'],
+  'West Bengal': ['Chandni Chowk & E-Mall, Kolkata', 'Salt Lake Sector V IT Hub, Kolkata', 'Gariahat, Kolkata', 'Hill Cart Road, Siliguri'],
+  'Uttar Pradesh': ['Hazratganj & Naka Hindola, Lucknow', 'Som Dutt Plaza, Kanpur', 'Sanjay Place, Agra', 'Rath Yatra & Sigra, Varanasi'],
+  'Haryana': ['DLF Cyber City, Gurugram', 'Sector 14 & 16 IT Market, Faridabad', 'GT Road, Panipat'],
+  'Punjab': ['Ferozepur Road & Ghumar Mandi, Ludhiana', 'Hall Gate & Lawrence Road, Amritsar', 'Phagwara Gate IT Market, Jalandhar'],
+  'Rajasthan': ['Raisar Plaza & MI Road, Jaipur', 'Nai Sarak, Jodhpur', 'Bapu Bazaar, Udaipur'],
+  'Madhya Pradesh': ['MP Nagar & Silver Saniwara, Bhopal', 'Jail Road & YN Road, Indore', 'Jayendra Ganj, Gwalior'],
+  'Kerala': ['MG Road & Marine Drive, Kochi', 'Technopark & Statue, Thiruvananthapuram', 'Mavoor Road, Kozhikode'],
+  'Goa': ['Panaji Market & EDC Complex, Panaji', '18th June Road, Panaji', 'Comba, Margao'],
+  'All India': ['Nehru Place, Delhi', 'Lamington Road, Mumbai', 'SP Road, Bengaluru', 'Ritchie Street, Chennai', 'CTC Secunderabad, Hyderabad', 'Chandni Chowk E-Mall, Kolkata', 'CG Road, Ahmedabad']
 };
 
 let currentState = 'Delhi NCR';
@@ -286,7 +302,16 @@ function onStateChange(stateName) {
   currentState = stateName || 'Delhi NCR';
   const labelEl = document.getElementById('city-picker-label');
   if (labelEl) labelEl.textContent = `4. Select Cities in ${currentState}`;
+  
   renderCityChips();
+  renderHubDatalist();
+}
+
+function renderHubDatalist() {
+  const datalist = document.getElementById('market-area-suggestions');
+  if (!datalist) return;
+  const hubs = STATE_HUBS[currentState] || STATE_HUBS['Delhi NCR'];
+  datalist.innerHTML = hubs.map(hub => `<option value="${hub}">`).join('');
 }
 
 function renderCityChips() {
