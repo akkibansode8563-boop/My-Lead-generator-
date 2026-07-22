@@ -4,6 +4,15 @@
 
 'use strict';
 
+function getApiBaseUrl() {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3000';
+  }
+  // Production Backend URL (Render / Railway / VPS)
+  return window.location.origin.replace(/\.vercel\.app$/, '-backend.onrender.com');
+}
+window.getApiBaseUrl = getApiBaseUrl;
+
 const APIFY_BASE     = 'https://api.apify.com/v2';
 const POLL_INTERVAL  = 4000;    // ms between status polls
 const MAX_POLL_TIME  = 600000;  // 10 minutes max
@@ -84,31 +93,92 @@ function buildSearchQueries(config) {
   return [...new Set(queries)];
 }
 
-// ── Main Apify Generate Flow ───────────────────
+// ── Main Generate Flow (Calls Backend API) ───────────────────
+let campaignPollTimer = null;
+
+async function pollCampaignProgress(campaignId) {
+  if (generateCancelled) return;
+
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/campaigns/${campaignId}/progress`);
+    if (!res.ok) throw new Error('Progress fetch failed');
+    
+    const progressData = await res.json();
+    
+    // Update live indicators
+    const status = progressData.status || 'running';
+    const progress = progressData.progress || 0;
+    const leadsCollected = progressData.leadsCollected || 0;
+    const pagesProcessed = progressData.pagesProcessed || 0;
+    const totalPages = progressData.totalPages || 0;
+    const eta = progressData.eta || 'Calculating...';
+    const currentQuery = progressData.currentQuery || '—';
+    const successCount = progressData.successCount || 0;
+    const failedCount = progressData.failedCount || 0;
+    const duplicateCount = progressData.duplicateCount || 0;
+    const exportStatus = progressData.exportStatus || 'Pending';
+
+    // Status formatting
+    let statusText = 'Initializing';
+    if (status === 'running') statusText = 'Scraping Leads';
+    else if (status === 'completed') statusText = 'Finished';
+    else if (status === 'failed') statusText = 'Failed';
+    else if (status === 'Exporting') statusText = 'Exporting';
+    else if (status === 'Scraping') statusText = 'Scraping Leads';
+    else statusText = status.charAt(0).toUpperCase() + status.slice(1);
+
+    // Update progress bar
+    setGenProgress(progress, statusText);
+    setGenStatus(`${statusText}...`, `Processing queries...`);
+
+    // Update live grid cards
+    document.getElementById('stat-leads-collected').textContent = leadsCollected;
+    document.getElementById('stat-pages').textContent = `${pagesProcessed} / ${totalPages}`;
+    document.getElementById('stat-eta').textContent = eta;
+    document.getElementById('stat-success-count').textContent = successCount;
+    document.getElementById('stat-duplicate-count').textContent = duplicateCount;
+    document.getElementById('stat-failed-count').textContent = failedCount;
+    document.getElementById('stat-current-status').textContent = statusText;
+    document.getElementById('stat-export-status').textContent = exportStatus;
+    document.getElementById('stat-current-query').textContent = currentQuery;
+
+    if (status === 'completed') {
+      setGenProgress(100, 'Completed');
+      setGenStatus('Generation Complete!', `Saved ${successCount} leads`);
+      
+      // Stop polling and show done page
+      finishGenerate(successCount, duplicateCount, failedCount);
+      
+      // Reload CRM leads in background
+      if (typeof fetchLeads === 'function') {
+        fetchLeads();
+      }
+      return;
+    }
+
+    if (status === 'failed') {
+      showToast('Campaign failed. Check backend logs.', 'error');
+      setGenerateState('idle');
+      return;
+    }
+
+    // Schedule next poll
+    campaignPollTimer = setTimeout(() => pollCampaignProgress(campaignId), 1500);
+
+  } catch (err) {
+    console.error('Error polling campaign progress:', err);
+    campaignPollTimer = setTimeout(() => pollCampaignProgress(campaignId), 3000);
+  }
+}
+
+// ── Main Generate Flow (Calls Backend API) ───────────────────
 async function startApifyGenerate() {
   generateCancelled = false;
 
-  const apiKey = getApifyKey() || document.getElementById('apify-key-input')?.value.trim();
-
   const config = {
-    apiKey,
     industries:     getSelectedChips('industries-chips'),
-    bizTypes:       getSelectedChips('biz-type-chips'),
     products:       getSelectedChips('products-chips'),
     locations:      [...locationTags],
-    country:        'India',
-    language:       document.getElementById('gm-language')?.value || 'en',
-    maxResults:     parseInt(document.getElementById('max-results')?.value || 200),
-    minRating:      parseFloat(document.getElementById('min-rating')?.value || 3.5),
-    minReviews:     parseInt(document.getElementById('min-reviews')?.value || 5),
-    companySize:    document.getElementById('company-size')?.value || 'any',
-    defaultStatus:  document.getElementById('default-status')?.value || 'new',
-    skipDuplicates: document.getElementById('skip-duplicates')?.checked ?? true,
-    requirePhone:   document.getElementById('require-phone')?.checked ?? true,
-    requireWebsite: document.getElementById('require-website')?.checked ?? false,
-    includeKw:      (document.getElementById('include-keywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean),
-    excludeKw:      (document.getElementById('exclude-keywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean),
-    excludeClosed:  document.getElementById('exclude-closed')?.checked ?? true,
   };
 
   if (config.industries.length === 0 && config.products.length === 0) {
@@ -117,44 +187,59 @@ async function startApifyGenerate() {
   }
 
   setGenerateState('running');
-  setGenStatus('Initializing...', 'Preparing lead generation');
-  setGenProgress(5, 'Starting...');
+  setGenStatus('Initializing...', 'Sending campaign to server');
+  setGenProgress(10, 'Connecting...');
   setGenCount(0);
 
-  const queries = buildSearchQueries(config);
-
-  // No API key → demo mode
-  if (!apiKey) {
-    await runDemoMode(queries, config);
-    return;
-  }
-
-  setGenStatus('Connecting to Apify...', 'Finding Google Maps Scraper actor');
-  setGenProgress(8, 'Resolving actor...');
-
-  const actorId = await resolveActorId(apiKey);
+  // Clear previous live grid values
+  document.getElementById('stat-leads-collected').textContent = '0';
+  document.getElementById('stat-pages').textContent = '0 / 0';
+  document.getElementById('stat-eta').textContent = 'Calculating...';
+  document.getElementById('stat-success-count').textContent = '0';
+  document.getElementById('stat-duplicate-count').textContent = '0';
+  document.getElementById('stat-failed-count').textContent = '0';
+  document.getElementById('stat-current-status').textContent = 'Initializing';
+  document.getElementById('stat-export-status').textContent = 'Pending';
+  document.getElementById('stat-current-query').textContent = '—';
 
   try {
-    if (!actorId) {
-      showToast('⚠️ Could not find a working Apify actor. Falling back to Demo Mode.', 'warning', 5000);
-      await runDemoMode(queries, config, true);
-      return;
-    }
-    await runApifyActor(queries, config, actorId);
-  } catch(err) {
-    const isActorErr = err.message?.toLowerCase().includes('actor') ||
-                       err.message?.toLowerCase().includes('not found') ||
-                       err.message?.toLowerCase().includes('unauthorized') ||
-                       err.message?.toLowerCase().includes('403');
+    const stateVal = document.getElementById('geo-state')?.value || 'Maharashtra';
+    const marketAreaVal = document.getElementById('geo-market-area')?.value?.trim() || '';
+    const radiusVal = parseFloat(document.getElementById('geo-radius')?.value || '5');
+    const primaryCity = config.locations[0] || 'Nagpur';
 
-    if (isActorErr) {
-      localStorage.removeItem('lf_actor_id');
-      showToast(`⚠️ ${err.message} — Switching to Demo Mode.`, 'warning', 6000);
-      await runDemoMode(queries, config, true);
-    } else {
-      showToast(`Error: ${err.message}`, 'error', 6000);
-      setGenerateState('idle');
-    }
+    const payload = {
+      name: `Scan: ${primaryCity}${marketAreaVal ? ' (' + marketAreaVal + ')' : ''}`,
+      state: stateVal,
+      city: primaryCity,
+      market_area: marketAreaVal,
+      radius_km: radiusVal,
+      customer_types: config.industries.length > 0 ? config.industries : ['IT Dealers'],
+      product_categories: config.products.length > 0 ? config.products : ['IT Hardware'],
+      target_regions: config.locations,
+      target_categories: [...config.industries, ...config.products]
+    };
+
+    const res = await fetch(`${getApiBaseUrl()}/api/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to start campaign on server');
+    
+    const data = await res.json();
+    setGenStatus('Campaign Started!', `ID: ${data.campaign.id.slice(0, 8)}`);
+    setGenProgress(15, 'Polling progress...');
+    
+    showToast('Campaign successfully started. Tracking progress...', 'success', 4000);
+    
+    // Start polling campaign progress
+    pollCampaignProgress(data.campaign.id);
+
+  } catch(err) {
+    showToast(`Error: ${err.message}`, 'error', 6000);
+    setGenerateState('idle');
   }
 }
 
@@ -433,6 +518,7 @@ function finishGenerate(imported, dupes, filtered) {
 function cancelGenerate() {
   generateCancelled = true;
   if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  if (campaignPollTimer) { clearTimeout(campaignPollTimer); campaignPollTimer = null; }
   setGenerateState('idle');
   showToast('Lead generation cancelled.', 'info');
 }

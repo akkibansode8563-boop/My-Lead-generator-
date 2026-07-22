@@ -1,0 +1,31 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "health": "node scripts/healthCheck.js",
+    "prod": "pm2 start ecosystem.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "apify-client": "^2.23.3",
+    "bullmq": "^5.77.3",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "fuse.js": "^7.3.0",
+    "ioredis": "^5.10.1",
+    "morgan": "^1.10.1",
+    "openai": "^6.39.0",
+    "playwright": "^1.60.0"
+  }
+}

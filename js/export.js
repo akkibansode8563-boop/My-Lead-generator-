@@ -64,81 +64,284 @@ function exportLeadsCSV() {
   showToast(`✅ Exported ${leads.length} leads as CSV`, 'success');
 }
 
+// Global variables to store the last generated file for "Download Again"
+let lastExportedBlob = null;
+let lastExportedFilename = null;
+
+// Helper to get active CRM filters
+function getActiveFilterParams() {
+  const params = new URLSearchParams();
+  const search      = document.getElementById('leads-search')?.value || '';
+  const region      = document.getElementById('filter-region')?.value || '';
+  const city        = document.getElementById('filter-city')?.value || '';
+  const category    = document.getElementById('filter-category')?.value || '';
+  const industry    = document.getElementById('filter-industry')?.value || '';
+  const sector      = document.getElementById('filter-sector')?.value || '';
+  const platform    = document.getElementById('filter-platform')?.value || '';
+  const status      = document.getElementById('filter-status')?.value || '';
+  const campaign_id = document.getElementById('filter-campaign')?.value || '';
+
+  if (campaign_id) params.append('campaign_id', campaign_id);
+  if (city) params.append('city', city);
+  else if (region && region !== 'all') params.append('region', region);
+  if (industry)  params.append('industry', industry);
+  if (category)  params.append('category', category);
+  if (search)    params.append('search', search);
+  if (sector)    params.append('sector', sector);
+  if (platform)  params.append('source', platform);
+  if (status)    params.append('status', status);
+
+  return params;
+}
+
+// Validation helpers
+function validateEmail(email) {
+  if (!email) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
+function validatePhone(phone) {
+  if (!phone) return false;
+  const cleaned = String(phone).replace(/\D/g, '');
+  return cleaned.length >= 8 && cleaned.length <= 15;
+}
+
 // ── Excel Export (SheetJS) ────────────────────
-function exportLeadsExcel() {
+async function exportLeadsExcel() {
   if (typeof XLSX === 'undefined') {
     showToast('Excel library not loaded. Check your internet connection.', 'error');
     return;
   }
 
-  const leads = filteredLeads.length > 0 ? filteredLeads : getLeads();
-  if (!leads.length) { showToast('No leads to export.', 'warning'); return; }
+  const startTime = Date.now();
+  
+  // Show progress modal
+  openModal('modal-export-progress');
+  
+  const progressBar = document.getElementById('export-progress-bar');
+  const progressPct = document.getElementById('export-progress-pct');
+  const progressLabel = document.getElementById('export-progress-label');
+  const progressStatus = document.getElementById('export-progress-status');
 
-  const rows = getExportRows();
+  const updateProgress = (page, total, text = '') => {
+    const pct = total > 0 ? Math.round((page / total) * 100) : 0;
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent = pct + '%';
+    if (progressLabel) progressLabel.textContent = `Pages: ${page} / ${total}`;
+    if (progressStatus) progressStatus.textContent = text || `Fetching page ${page} of ${total}...`;
+  };
 
-  // Create workbook
-  const wb = XLSX.utils.book_new();
+  updateProgress(0, 0, 'Connecting to server...');
 
-  // Main leads sheet
-  const ws = XLSX.utils.json_to_sheet(rows);
+  let allLeads = [];
+  let page = 1;
+  let totalPages = 1;
+  const limit = 100;
+  
+  try {
+    const filterParams = getActiveFilterParams();
 
-  // Style column widths
-  ws['!cols'] = [
-    { wch: 30 }, // Company Name
-    { wch: 18 }, // Phone
-    { wch: 28 }, // Email
-    { wch: 30 }, // Website
-    { wch: 40 }, // Address
-    { wch: 12 }, // Rating
-    { wch: 12 }, // Reviews
-    { wch: 25 }, // Category
-    { wch: 18 }, // Location
-    { wch: 25 }, // Industry
-    { wch: 15 }, // Status
-    { wch: 40 }, // Notes
-    { wch: 12 }, // Source
-    { wch: 18 }, // Date
-  ];
+    // Fetch first page to get metadata and totalPages
+    const params = new URLSearchParams(filterParams);
+    params.set('page', page);
+    params.set('limit', limit);
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    const apiBase = window.getApiBaseUrl ? window.getApiBaseUrl() : 'http://localhost:3000';
+    const firstRes = await fetch(`${apiBase}/api/leads?${params.toString()}`);
+    if (!firstRes.ok) throw new Error('Failed to fetch leads page 1');
+    const firstData = await firstRes.json();
+    
+    allLeads.push(...(firstData.data || []));
+    totalPages = firstData.meta?.totalPages || 1;
+    
+    updateProgress(1, totalPages, `Fetched page 1 of ${totalPages}`);
 
-  // Summary sheet
-  const statusCounts = {};
-  ['new','contacted','qualified','proposal','won','lost'].forEach(s => {
-    statusCounts[s] = leads.filter(l => l.status === s).length;
-  });
+    // Fetch remaining pages sequentially
+    for (page = 2; page <= totalPages; page++) {
+      updateProgress(page, totalPages, `Fetching page ${page} of ${totalPages}...`);
+      
+      const pageParams = new URLSearchParams(filterParams);
+      pageParams.set('page', page);
+      pageParams.set('limit', limit);
 
-  const summaryData = [
-    { Metric: 'Total Leads', Value: leads.length },
-    { Metric: 'Export Date', Value: new Date().toLocaleDateString('en-IN') },
-    { Metric: 'New',         Value: statusCounts.new || 0 },
-    { Metric: 'Contacted',   Value: statusCounts.contacted || 0 },
-    { Metric: 'Qualified',   Value: statusCounts.qualified || 0 },
-    { Metric: 'Proposal Sent', Value: statusCounts.proposal || 0 },
-    { Metric: 'Won',         Value: statusCounts.won || 0 },
-    { Metric: 'Lost',        Value: statusCounts.lost || 0 },
-    { Metric: 'With Phone',  Value: leads.filter(l => l.phone).length },
-    { Metric: 'With Email',  Value: leads.filter(l => l.email).length },
-    { Metric: 'With Website', Value: leads.filter(l => l.website).length },
-    { Metric: 'Avg. Rating', Value: avgRating(leads) },
-  ];
+      const res = await fetch(`${apiBase}/api/leads?${pageParams.toString()}`);
+      if (!res.ok) throw new Error(`Failed to fetch leads page ${page}`);
+      const pageData = await res.json();
+      
+      allLeads.push(...(pageData.data || []));
+      
+      updateProgress(page, totalPages, `Fetched page ${page} of ${totalPages}`);
+      await new Promise(r => setTimeout(r, 80));
+    }
 
-  const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-  wsSummary['!cols'] = [{ wch: 20 }, { wch: 15 }];
-  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+    if (allLeads.length === 0) {
+      closeModal('modal-export-progress');
+      showToast('No leads found matching current filters to export.', 'warning');
+      return;
+    }
 
-  // Location breakdown sheet
-  const locMap = {};
-  leads.forEach(l => { const loc = l.location || 'Unknown'; locMap[loc] = (locMap[loc] || 0) + 1; });
-  const locData = Object.entries(locMap).sort((a,b) => b[1]-a[1]).map(([loc, count]) => ({ Location: loc, 'Lead Count': count }));
+    // Process and validate leads
+    const validLeads = [];
+    const seenPhones = new Set();
+    const seenNames = new Set();
+    let duplicateCount = 0;
+    let failedCount = 0;
 
-  const wsLoc = XLSX.utils.json_to_sheet(locData);
-  wsLoc['!cols'] = [{ wch: 25 }, { wch: 15 }];
-  XLSX.utils.book_append_sheet(wb, wsLoc, 'By Location');
+    allLeads.forEach(lead => {
+      const companyName = (lead.company_name || lead.name || '').trim();
+      const rawPhone = lead.phone || '';
+      const email = (lead.email || '').trim();
+      const city = lead.city || lead.location || '';
 
-  // Write and download
-  XLSX.writeFile(wb, `My_Lead_Generator_Leads_${dateStamp()}.xlsx`);
-  showToast(`✅ Exported ${leads.length} leads as Excel (.xlsx)`, 'success');
+      // 1. Check basic name requirement
+      if (!companyName || companyName.toLowerCase() === 'unknown') {
+        failedCount++;
+        return;
+      }
+
+      // 2. Perform duplicate checks in-memory
+      const cleanedPhone = rawPhone.replace(/\D/g, '');
+      const nameKey = `${companyName.toLowerCase().trim()}_${city.toLowerCase().trim()}`;
+      
+      let isDup = false;
+      if (cleanedPhone && seenPhones.has(cleanedPhone)) {
+        isDup = true;
+      } else if (seenNames.has(nameKey)) {
+        isDup = true;
+      }
+
+      if (isDup) {
+        duplicateCount++;
+        return;
+      }
+
+      // Track uniqueness
+      if (cleanedPhone) seenPhones.add(cleanedPhone);
+      seenNames.add(nameKey);
+
+      // 3. Email and Phone validation
+      const isEmailValid = validateEmail(email);
+      const isPhoneValid = validatePhone(rawPhone);
+
+      // If both phone and email are invalid, it's failed
+      if (!isEmailValid && !isPhoneValid) {
+        failedCount++;
+        return;
+      }
+
+      validLeads.push(lead);
+    });
+
+    // Generate sheet rows
+    const excelRows = validLeads.map(lead => {
+      const aiData = lead.ai_enriched_data || {};
+      const contactPerson = aiData.contact_person || '';
+      const designation = aiData.designation || '';
+      const city = lead.city || lead.location || '';
+      const state = lead.state || '';
+
+      return {
+        'Company Name': lead.company_name || lead.name || '',
+        'Contact Person': contactPerson,
+        'Designation': designation,
+        'Email': lead.email || '',
+        'Mobile': lead.phone || '',
+        'Website': lead.website || '',
+        'Address': lead.address || '',
+        'City': city,
+        'State': state
+      };
+    });
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelRows);
+
+    // Freeze header row
+    ws['!views'] = [
+      { state: 'frozen', ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft' }
+    ];
+
+    // Auto-adjust column widths
+    const colKeys = ['Company Name', 'Contact Person', 'Designation', 'Email', 'Mobile', 'Website', 'Address', 'City', 'State'];
+    ws['!cols'] = colKeys.map(key => {
+      let maxLen = key.length;
+      excelRows.forEach(row => {
+        const valStr = row[key] ? String(row[key]) : '';
+        if (valStr.length > maxLen) maxLen = valStr.length;
+      });
+      return { wch: Math.min(Math.max(maxLen + 2, 10), 60) };
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+
+    // Add Summary sheet inside workbook
+    const extractionDate = new Date().toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const summarySheetData = [
+      { 'Metrics': 'Extraction Date', 'Values': extractionDate },
+      { 'Metrics': 'Total Pages Processed', 'Values': totalPages },
+      { 'Metrics': 'Total Leads Found', 'Values': allLeads.length },
+      { 'Metrics': 'Valid Leads Exported', 'Values': validLeads.length },
+      { 'Metrics': 'Duplicate Leads Removed', 'Values': duplicateCount },
+      { 'Metrics': 'Failed Records', 'Values': failedCount }
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+    wsSummary['!cols'] = [{ wch: 25 }, { wch: 35 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    // Generate output blob and file size
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    
+    const fileSizeKB = (blob.size / 1024).toFixed(2);
+    const fileSizeStr = fileSizeKB > 1024 ? `${(fileSizeKB / 1024).toFixed(2)} MB` : `${fileSizeKB} KB`;
+    
+    const execTime = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+
+    // Store globally for re-download
+    lastExportedBlob = blob;
+    lastExportedFilename = `Leads_Consolidated_Export_${dateStamp()}.xlsx`;
+
+    // Close progress modal
+    closeModal('modal-export-progress');
+
+    // Display summary modal stats
+    document.getElementById('summary-total-pages').textContent = totalPages;
+    document.getElementById('summary-total-leads').textContent = allLeads.length;
+    document.getElementById('summary-valid-leads').textContent = validLeads.length;
+    document.getElementById('summary-duplicate-leads').textContent = duplicateCount;
+    document.getElementById('summary-failed-leads').textContent = failedCount;
+    document.getElementById('summary-file-size').textContent = fileSizeStr;
+    document.getElementById('summary-exec-time').textContent = execTime;
+
+    // Attach click handler to Download Again button
+    const dlBtn = document.getElementById('btn-download-again');
+    if (dlBtn) {
+      dlBtn.onclick = () => {
+        downloadBlob(lastExportedBlob, lastExportedFilename);
+        showToast('📥 Downloading Excel file again', 'success');
+      };
+    }
+
+    // Open Summary Modal
+    openModal('modal-export-summary');
+
+    // Automatically trigger initial download
+    downloadBlob(lastExportedBlob, lastExportedFilename);
+    showToast(`✅ Excel file exported successfully (${validLeads.length} leads)`, 'success');
+
+  } catch (err) {
+    console.error('Export Excel failed:', err);
+    closeModal('modal-export-progress');
+    showToast(`Export error: ${err.message}`, 'error');
+  }
 }
 
 // ── Helpers ───────────────────────────────────

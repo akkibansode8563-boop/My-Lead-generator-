@@ -1873,3 +1873,113 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .sidebar-overlay.visible { display: block; }
+
+/* ── Progress Stats Grid & Cards (Modern Premium Glassmorphism) ── */
+.progress-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 24px 0;
+  text-align: left;
+}
+
+@media (min-width: 640px) {
+  .progress-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stats-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+}
+
+.stats-card .stats-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.stats-card .stats-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stats-card.highlight {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.stats-card.highlight .stats-value {
+  color: var(--accent);
+}
+
+.stats-card.success {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.stats-card.success .stats-value {
+  color: #10b981;
+}
+
+.stats-card.warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.stats-card.warning .stats-value {
+  color: #f59e0b;
+}
+
+.stats-card.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.stats-card.danger .stats-value {
+  color: #ef4444;
+}
+
+/* Modals layout adjustments */
+.export-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.export-meta-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.export-meta-item span:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.export-meta-item span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}

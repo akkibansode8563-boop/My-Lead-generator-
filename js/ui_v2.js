@@ -130,7 +130,7 @@ function showPage(pageId) {
   closeMobileSidebar();
 
   // Page-specific init
-  if (pageId === 'leads') filterLeads();
+  if (pageId === 'leads') { loadCampaignDropdown().then(() => filterLeads()); }
   if (pageId === 'history') renderHistory();
   if (pageId === 'analytics') renderAnalytics();
   if (pageId === 'dashboard') renderDashboard();
@@ -144,11 +144,15 @@ const TOTAL_STEPS = 6;
 
 function wizardNext(step) {
   if (step === 1 && step < TOTAL_STEPS) {
-    // Save API key from wizard
-    const key = document.getElementById('apify-key-input').value.trim();
-    if (key) {
-      localStorage.setItem('lf_apify_key', btoa(key));
-      document.getElementById('settings-apify-key').value = key;
+    // Save API key from wizard if it exists
+    const apifyInput = document.getElementById('apify-key-input');
+    if (apifyInput) {
+      const key = apifyInput.value.trim();
+      if (key) {
+        localStorage.setItem('lf_apify_key', btoa(key));
+        const settingsInput = document.getElementById('settings-apify-key');
+        if (settingsInput) settingsInput.value = key;
+      }
     }
   }
   goToWizardStep(step + 1);
@@ -530,7 +534,8 @@ async function updateLeadsBadge() {
   const badge = document.getElementById('leads-count-badge');
   if (badge) {
     try {
-      const res = await fetch('http://localhost:3000/api/leads?page=1&limit=1');
+      const apiBase = window.getApiBaseUrl ? window.getApiBaseUrl() : 'http://localhost:3000';
+      const res = await fetch(`${apiBase}/api/leads?page=1&limit=1`);
       if (res.ok) {
         const { meta } = await res.json();
         badge.textContent = meta.total || 0;
@@ -647,8 +652,9 @@ async function renderDashboard() {
   if (demoBanner) demoBanner.style.display = 'none';
 
   try {
+    const apiBase = window.getApiBaseUrl ? window.getApiBaseUrl() : 'http://localhost:3000';
     // Fetch stats and recent 5 leads from the backend
-    const res = await fetch('http://localhost:3000/api/leads?page=1&limit=5');
+    const res = await fetch(`${apiBase}/api/leads?page=1&limit=5`);
     if (!res.ok) throw new Error('Failed to fetch dashboard data');
     const { data: recent, meta } = await res.json();
 

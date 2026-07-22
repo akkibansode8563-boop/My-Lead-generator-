@@ -150,24 +150,36 @@ let sortField = 'createdAt';
 let sortDir = 'desc';
 
 async function filterLeads() {
-  const search   = (document.getElementById('leads-search')?.value || '').toLowerCase();
-  const region   = document.getElementById('filter-region')?.value || '';
-  const city     = document.getElementById('filter-city')?.value || '';
-  const category = document.getElementById('filter-category')?.value || '';
+  const search      = (document.getElementById('leads-search')?.value || '').toLowerCase();
+  const region      = document.getElementById('filter-region')?.value || '';
+  const city        = document.getElementById('filter-city')?.value || '';
+  const category    = document.getElementById('filter-category')?.value || '';
+  const industry    = document.getElementById('filter-industry')?.value || '';
+  const sector      = document.getElementById('filter-sector')?.value || '';
+  const platform    = document.getElementById('filter-platform')?.value || '';
+  const status      = document.getElementById('filter-status')?.value || '';
+  const campaign_id = document.getElementById('filter-campaign')?.value || '';
 
   try {
     let params;
     try {
       params = new URLSearchParams({ page: currentPage, limit: PAGE_SIZE });
+      // Campaign isolation — most important filter
+      if (campaign_id) params.append('campaign_id', campaign_id);
       if (city) params.append('city', city);
       else if (region && region !== 'all') params.append('region', region);
-      if (category) params.append('category', category);
-      if (search) params.append('search', search);
+      if (industry)  params.append('industry', industry);
+      if (category)  params.append('category', category);
+      if (search)    params.append('search', search);
+      if (sector)    params.append('sector', sector);
+      if (platform)  params.append('source', platform);
+      if (status)    params.append('status', status);
     } catch (e) { throw new Error('Params failed: ' + e.message); }
 
+    const apiBase = window.getApiBaseUrl ? window.getApiBaseUrl() : 'http://localhost:3000';
     let res;
     try {
-      res = await fetch(`http://localhost:3000/api/leads?${params.toString()}`);
+      res = await fetch(`${apiBase}/api/leads?${params.toString()}`);
     } catch (e) { throw new Error('Fetch failed: ' + e.message); }
 
     if (!res.ok) {
@@ -193,11 +205,15 @@ async function filterLeads() {
         website: lead.website,
         address: lead.address,
         location: lead.city,
+        state: lead.state, // Map the state/region column
         category: lead.category,
         rating: lead.rating,
         reviews: lead.reviews,
         source: lead.source,
-        status: 'new'
+        status: 'new',
+        ai_score: lead.ai_score,
+        quality_tier: lead.quality_tier,
+        ai_enriched_data: lead.ai_enriched_data
       }));
     } catch (e) { throw new Error('Mapping failed: ' + e.message); }
 
@@ -211,9 +227,9 @@ async function filterLeads() {
     console.error('Error fetching leads:', err);
     
     // Fallback UI to show the exact error message visually!
-    const tbody = document.getElementById('leads-body');
+    const tbody = document.getElementById('leads-table-body');
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div style="color:red;font-size:24px">⚠️ FATAL ERROR</div><div style="color:red;font-weight:bold;margin-top:10px">${err.message}</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div style="color:red;font-size:24px">⚠️ FATAL ERROR</div><div style="color:red;font-weight:bold;margin-top:10px">${err.message}</div></div></td></tr>`;
     }
   }
 }
@@ -242,16 +258,86 @@ function sortLeads(field) {
   filterLeads();
 }
 
-function clearFilters() {
-  document.getElementById('leads-search').value    = '';
-  document.getElementById('filter-region').value   = '';
-  document.getElementById('filter-city').value     = '';
-  document.getElementById('filter-status').value   = '';
-  document.getElementById('filter-category').value = '';
-  document.getElementById('filter-rating').value   = '';
-  // Reset city dropdown to All Cities
+// Load campaigns into the campaign dropdown from the server
+async function loadCampaignDropdown() {
+  try {
+    const apiBase = window.getApiBaseUrl ? window.getApiBaseUrl() : 'http://localhost:3000';
+    const res = await fetch(`${apiBase}/api/leads/campaigns`);
+    const { data } = await res.json();
+    const sel = document.getElementById('filter-campaign');
+    if (!sel || !data) return;
+
+    sel.innerHTML = '<option value="">📋 All Campaigns (Mixed)</option>' +
+      data.map(c => {
+        const date = new Date(c.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+        const cats = (c.target_categories || []).slice(0, 2).join(', ');
+        const regs = (c.target_regions || []).slice(0, 2).join(', ');
+        const label = `${date} — ${cats}${regs ? ' | ' + regs : ''} (${c.leads_found || 0} leads)`;
+        return `<option value="${c.id}">${label}</option>`;
+      }).join('');
+  } catch(e) {
+    console.warn('Could not load campaigns:', e.message);
+  }
+}
+
+// When a campaign is selected, update meta info and reload leads
+function onCampaignChange() {
+  const sel = document.getElementById('filter-campaign');
+  const meta = document.getElementById('campaign-meta');
+  if (sel.value) {
+    const opt = sel.options[sel.selectedIndex];
+    if (meta) meta.textContent = '✅ Showing only this campaign\'s leads';
+  } else {
+    if (meta) meta.textContent = '⚠️ Showing ALL campaigns — data may be mixed';
+  }
+  currentPage = 1;
+  filterLeads();
+}
+
+// Populate filter dropdowns dynamically from current loaded leads
+function populateFilterDropdowns() {
+  const leads = filteredLeads;
+
+  // Unique cities
+  const cities = [...new Set(leads.map(l => l.location).filter(Boolean))].sort();
   const citySel = document.getElementById('filter-city');
-  if (citySel) citySel.innerHTML = '<option value="">All Cities</option>';
+  if (citySel && citySel.dataset.fromRegion !== 'true') {
+    const curCity = citySel.value;
+    citySel.innerHTML = '<option value="">📍 All Cities</option>' +
+      cities.map(c => `<option value="${esc(c)}"${c===curCity?' selected':''}>${esc(c)}</option>`).join('');
+  }
+
+  // Unique industries (unique categories mapped as industries)
+  const industries = [...new Set(leads.map(l => l.category).filter(Boolean))].sort();
+  const indSel = document.getElementById('filter-industry');
+  if (indSel) {
+    const curInd = indSel.value;
+    indSel.innerHTML = '<option value="">🏭 All Industries</option>' +
+      industries.map(c => `<option value="${esc(c)}"${c===curInd?' selected':''}>${esc(c)}</option>`).join('');
+  }
+
+  // Unique product categories (same data, separate dropdown)
+  const catSel = document.getElementById('filter-category');
+  if (catSel) {
+    const curCat = catSel.value;
+    catSel.innerHTML = '<option value="">📦 All Products</option>' +
+      industries.map(c => `<option value="${esc(c)}"${c===curCat?' selected':''}>${esc(c)}</option>`).join('');
+  }
+}
+
+
+
+// ── Render Table ──────────────────────────────
+// Clear all filters and reload
+function clearFilters() {
+  ['leads-search','filter-region','filter-city','filter-industry','filter-category',
+   'filter-sector','filter-platform','filter-status','filter-rating'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const citySel = document.getElementById('filter-city');
+  if (citySel) citySel.innerHTML = '<option value="">📍 All Cities</option>';
+  currentPage = 1;
   filterLeads();
 }
 
@@ -260,34 +346,21 @@ function onRegionFilterChange() {
   const region = document.getElementById('filter-region')?.value || '';
   const citySel = document.getElementById('filter-city');
   if (!citySel) return;
-
   if (!region || typeof MH_REGIONS === 'undefined') {
-    citySel.innerHTML = '<option value="">All Cities</option>';
+    citySel.innerHTML = '<option value="">📍 All Cities</option>';
+    citySel.dataset.fromRegion = 'false';
   } else {
     const cities = MH_REGIONS[region]?.cities || [];
-    citySel.innerHTML = '<option value="">All Cities</option>' +
+    citySel.innerHTML = '<option value="">📍 All Cities</option>' +
       cities.map(c => `<option value="${c}">${c}</option>`).join('');
+    citySel.dataset.fromRegion = 'true';
   }
   filterLeads();
 }
 
-// Populate filter dropdowns
-function populateFilterDropdowns() {
-  const leads = getLeads();
-  const categories = [...new Set(leads.map(l => l.category).filter(Boolean))].sort();
-
-  const catSel = document.getElementById('filter-category');
-  if (catSel) {
-    const curCat = catSel.value;
-    catSel.innerHTML = '<option value="">All Categories</option>' +
-      categories.map(c => `<option value="${esc(c)}"${c===curCat?' selected':''}>${esc(c)}</option>`).join('');
-  }
-}
-
-// ── Render Table ──────────────────────────────
 function renderLeadsTable() {
   populateFilterDropdowns();
-  const tbody = document.getElementById('leads-body');
+  const tbody = document.getElementById('leads-table-body');
   if (!tbody) return;
 
   const start = (currentPage - 1) * PAGE_SIZE;
@@ -295,7 +368,7 @@ function renderLeadsTable() {
 
   if (!totalLeads) {
     const debugInfo = typeof window.lastFetchDebug !== 'undefined' ? `<div style="margin-top:10px;font-size:10px;color:red;text-align:left;max-width:400px;overflow-wrap:break-word">${window.lastFetchDebug}</div>` : '';
-    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No leads found</div><div class="empty-desc">Try adjusting your filters or generate new leads.</div><button class="btn btn-primary btn-sm" onclick="showPage('generate')">⚡ Generate Leads</button>${debugInfo}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No leads found</div><div class="empty-desc">Try adjusting your filters or generate new leads.</div><button class="btn btn-primary btn-sm" onclick="showPage('generate')">⚡ Generate Leads</button>${debugInfo}</div></td></tr>`;
     document.getElementById('pagination-info').textContent = 'No results';
     document.getElementById('pagination-controls').innerHTML = '';
     return;
@@ -320,6 +393,9 @@ function buildLeadRow(l) {
     ? `<a href="mailto:${esc(l.email)}" style="color:var(--cyan);font-size:12px">${esc(l.email)}</a>`
     : '<span style="color:var(--text-muted);font-size:12px">—</span>';
 
+    const aiScoreDisplay = l.ai_score ? `<span style="margin-left:8px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;color:#fff;background:${l.ai_score >= 80 ? '#4caf50' : (l.ai_score >= 50 ? '#ff9800' : '#f44336')}">AI: ${l.ai_score}</span>` : '';
+    const b2bTag = l.ai_enriched_data?.type ? `<span style="margin-right:6px;padding:2px 4px;border-radius:4px;font-size:9px;background:#334155;color:#94a3b8">${l.ai_enriched_data.type}</span>` : '';
+
   return `
     <tr id="row-${l.id}">
       <td><input type="checkbox" class="lead-checkbox" data-id="${l.id}" /></td>
@@ -327,18 +403,23 @@ function buildLeadRow(l) {
         <div class="company-cell">
           <div class="company-avatar" style="background:${avatarColor(l.name)}">${(l.name||'?').charAt(0).toUpperCase()}</div>
           <div>
-            <div class="company-name" title="${esc(l.name)}">${esc(l.name)}</div>
-            <div class="company-category">${esc(l.category || '')}</div>
+            <div class="company-name" title="${esc(l.name)}">${esc(l.name)}${aiScoreDisplay}</div>
+            <div class="company-category">${b2bTag}${esc(l.category || '')}</div>
           </div>
         </div>
       </td>
-      <td class="phone-cell">${l.phone ? `<a href="tel:${esc(l.phone)}" style="color:var(--cyan);text-decoration:none">${esc(l.phone)}</a>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="phone-cell">${l.phone ? `<a href="tel:${esc(l.phone)}" style="color:var(--cyan);text-decoration:none;font-family:monospace">${esc(l.phone)}</a>` : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${emailDisplay}</td>
       <td>${websiteDisplay}</td>
       <td><div class="address-cell" title="${esc(l.address)}">${esc(l.address) || '—'}</div></td>
       <td>${renderRating(l.rating, l.reviews)}</td>
       <td><span style="font-size:12px;color:var(--text-secondary)">${esc(l.category || '—')}</span></td>
       <td><span style="font-size:12px">📍 ${esc(l.location || '—')}</span></td>
+      <td>
+        <span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--card-bg-elevated);color:var(--text-main);border:1px solid var(--border);">
+          ${l.source === 'gmaps' ? '🗺️ Google Maps' : l.source === 'indiamart' ? '🏢 IndiaMART' : (l.source || 'Unknown')}
+        </span>
+      </td>
       <td>
         <select class="status-badge status-${l.status||'new'}" onchange="changeLeadStatus('${l.id}', this.value, this)" style="cursor:pointer;padding:4px 10px;border-radius:var(--radius-full);font-size:11px;font-weight:600;border:none;font-family:inherit">
           ${statusOptions.map(s => `<option value="${s}" ${l.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
@@ -349,6 +430,7 @@ function buildLeadRow(l) {
           ${l.notes ? esc(l.notes) : '<span style="color:var(--text-muted)">Add note...</span>'}
         </div>
       </td>
+      <td><span style="font-size:12px;font-weight:600;color:var(--accent)">🗺️ ${esc(l.state || '—')}</span></td>
       <td>
         <div class="action-btns">
           <button class="action-btn edit" title="View Details" onclick="openLeadDetail('${l.id}')">👁</button>
