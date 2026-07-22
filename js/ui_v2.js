@@ -261,51 +261,40 @@ function quickAddLocation(city) {
   showToast(`${city} added to locations`, 'info', 1500);
 }
 
-// ── Region → City Data (Maharashtra & Goa) ────
-const MH_REGIONS = {
-  nagpur: {
-    label: 'Nagpur Region',
-    cities: ['Nagpur', 'Wardha', 'Chandrapur', 'Bhandara', 'Gondia', 'Gadchiroli', 'Amravati', 'Akola', 'Yavatmal', 'Washim']
-  },
-  nashik: {
-    label: 'Nashik Region',
-    cities: ['Nashik', 'Ahmednagar', 'Dhule', 'Jalgaon', 'Nandurbar', 'Malegaon']
-  },
-  pune: {
-    label: 'Pune Region',
-    cities: ['Pune', 'Pimpri Chinchwad', 'Chakan', 'Talegaon', 'Hinjawadi', 'Baramati', 'Satara', 'Sangli', 'Solapur']
-  },
-  csn: {
-    label: 'Chh. Sambhajinagar Region',
-    cities: ['Chhatrapati Sambhajinagar', 'Jalna', 'Beed', 'Latur', 'Osmanabad', 'Nanded', 'Parbhani', 'Hingoli']
-  },
-  kolhapur: {
-    label: 'Kolhapur & Goa Region',
-    cities: ['Kolhapur', 'Ratnagiri', 'Sindhudurg', 'Panaji', 'Vasco da Gama', 'Margao', 'Mapusa', 'Ponda']
-  },
-  mumbai: {
-    label: 'Mumbai Region',
-    cities: ['Mumbai', 'Navi Mumbai', 'Thane', 'Kalyan', 'Dombivli', 'Vasai', 'Virar', 'Palghar', 'Bhiwandi', 'Mira Bhayandar']
-  }
+// ── National State → Major Cities Master Data ────
+const STATE_CITIES = {
+  'Delhi NCR': ['New Delhi', 'Noida', 'Gurugram', 'Ghaziabad', 'Faridabad'],
+  'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Chhatrapati Sambhajinagar', 'Kolhapur', 'Thane', 'Navi Mumbai', 'Amravati', 'Akola', 'Solapur', 'Chandrapur', 'Jalgaon', 'Ratnagiri'],
+  'Karnataka': ['Bengaluru', 'Mysuru', 'Hubballi', 'Mangaluru', 'Belagavi', 'Kalaburagi', 'Ballari'],
+  'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar'],
+  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode'],
+  'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam'],
+  'West Bengal': ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol', 'Kharagpur'],
+  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Prayagraj', 'Meerut', 'Bareilly', 'Aligarh'],
+  'Haryana': ['Gurugram', 'Faridabad', 'Panipat', 'Ambala', 'Karnal', 'Hisar', 'Rohtak'],
+  'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Mohali', 'Bathinda'],
+  'Rajasthan': ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer'],
+  'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain'],
+  'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam'],
+  'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
+  'All India': ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Chennai', 'Hyderabad', 'Ahmedabad', 'Pune', 'Jaipur', 'Lucknow']
 };
 
-let activeRegion = 'nagpur';
+let currentState = 'Delhi NCR';
 
-function selectRegion(regionKey) {
-  activeRegion = regionKey;
+function onStateChange(stateName) {
+  currentState = stateName || 'Delhi NCR';
+  const labelEl = document.getElementById('city-picker-label');
+  if (labelEl) labelEl.textContent = `4. Select Cities in ${currentState}`;
+  renderCityChips();
+}
 
-  // Update region tab chips
-  document.querySelectorAll('#region-tabs .chip').forEach(c => {
-    c.classList.toggle('selected', c.getAttribute('data-region') === regionKey);
-  });
+function renderCityChips() {
+  const cityChipsWrap = document.getElementById('city-chips');
+  if (!cityChipsWrap) return;
 
-  // Update city picker label
-  const region = MH_REGIONS[regionKey];
-  document.getElementById('city-picker-label').textContent = `Cities in ${region.label}`;
-
-  // Render city chips
-  const cityChips = document.getElementById('city-chips');
-  cityChips.innerHTML = region.cities.map(city => `
+  const cities = STATE_CITIES[currentState] || STATE_CITIES['Delhi NCR'];
+  cityChipsWrap.innerHTML = cities.map(city => `
     <div class="chip${locationTags.includes(city) ? ' selected' : ''}"
          onclick="toggleCityChip(this, '${city}')">${city}</div>
   `).join('');
@@ -322,28 +311,35 @@ function toggleCityChip(el, city) {
   updateLocationCount();
 }
 
-function addAllRegionCities() {
-  const region = MH_REGIONS[activeRegion];
-  region.cities.forEach(city => {
+function addAllStateCities() {
+  const cities = STATE_CITIES[currentState] || [];
+  cities.forEach(city => {
     if (!locationTags.includes(city)) addTag(city);
   });
-  selectRegion(activeRegion); // refresh chip states
+  renderCityChips();
   updateLocationCount();
-  showToast(`All ${region.label} cities added`, 'success', 2000);
+  showToast(`All cities in ${currentState} added`, 'success', 2000);
 }
 
-function clearRegionCities() {
-  const region = MH_REGIONS[activeRegion];
-  region.cities.forEach(city => removeTag(city));
-  selectRegion(activeRegion);
+function clearStateCities() {
+  const cities = STATE_CITIES[currentState] || [];
+  cities.forEach(city => removeTag(city));
+  renderCityChips();
   updateLocationCount();
-  showToast(`${region.label} cities removed`, 'info', 1500);
+  showToast(`Cities in ${currentState} removed`, 'info', 1500);
 }
 
 function updateLocationCount() {
   const el = document.getElementById('location-count');
-  if (el) el.textContent = `${locationTags.length} ${locationTags.length === 1 ? 'city' : 'cities'}`;
+  if (el) el.textContent = `${locationTags.length} ${locationTags.length === 1 ? 'selected' : 'selected'}`;
 }
+
+// Auto-initialize default cities on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    onStateChange(document.getElementById('geo-state')?.value || 'Delhi NCR');
+  }, 200);
+});
 
 // Patch addTag/removeTag to also update count badge
 const _origAddTag = addTag;

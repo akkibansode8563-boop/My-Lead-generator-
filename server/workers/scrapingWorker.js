@@ -33,27 +33,41 @@ async function runCampaignJob(jobData) {
     global.campaignJobs[campaignId].progress = 5;
 
     // 2. Generate Search Queries (Geography + Customer Vertical + Category)
-    const targetState = state || 'Maharashtra';
-    const targetCity = city || (targetRegions && targetRegions[0]) || 'Nagpur';
+    const targetState = state || 'Delhi NCR';
+    const targetCity = city || (targetRegions && targetRegions[0]) || 'Delhi';
     const targetMarket = marketArea || '';
+    const regionsList = (targetRegions && targetRegions.length > 0) ? targetRegions : [targetCity];
     
-    const cats = productCategories && productCategories.length > 0 ? productCategories : (targetCategories || ['IT Hardware']);
-    const verticals = customerTypes && customerTypes.length > 0 ? customerTypes : ['IT Dealers'];
+    const cats = productCategories && productCategories.length > 0 ? productCategories : (targetCategories || ['IT Hardware', 'Laptops']);
+    const verticals = customerTypes && customerTypes.length > 0 ? customerTypes : ['IT Dealers', 'Computer Shops', 'System Integrators'];
     
-    const queries = [];
-    verticals.slice(0, 5).forEach(vert => {
-      cats.slice(0, 3).forEach(cat => {
-        const locationPart = targetMarket ? `${targetMarket}, ${targetCity}` : targetCity;
-        queries.push(`${vert} ${cat} near ${locationPart}`);
+    const queriesSet = new Set();
+
+    // Generate targeted query matrix for all selected city/market hubs
+    regionsList.forEach(loc => {
+      verticals.forEach(vert => {
+        cats.forEach(cat => {
+          if (targetMarket) {
+            queriesSet.add(`${vert} ${cat} near ${targetMarket}, ${loc}`);
+          }
+          queriesSet.add(`${vert} ${cat} near ${loc}`);
+          queriesSet.add(`${vert} in ${loc}`);
+        });
+        if (targetMarket) {
+          queriesSet.add(`${vert} near ${targetMarket}, ${loc}`);
+        }
+        queriesSet.add(`${vert} near ${loc}`);
       });
     });
 
-    // Fallback if no specific queries generated
+    const queries = Array.from(queriesSet).slice(0, 15); // max 15 queries per job
+
     if (queries.length === 0) {
       queries.push(`IT Hardware Dealers near ${targetCity}`);
+      queries.push(`Computer Dealers in ${targetCity}`);
     }
 
-    console.log(`[Worker] Generated ${queries.length} spatial search queries for ${targetCity}`);
+    console.log(`[Worker] Generated ${queries.length} high-yield spatial queries for ${targetCity} (${targetState})`);
     global.campaignJobs[campaignId].totalPages = queries.length;
 
     let savedCount = 0;

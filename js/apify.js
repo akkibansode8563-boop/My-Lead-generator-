@@ -202,21 +202,37 @@ async function startApifyGenerate() {
   document.getElementById('stat-export-status').textContent = 'Pending';
   document.getElementById('stat-current-query').textContent = '—';
 
-  try {
-    const stateVal = document.getElementById('geo-state')?.value || 'Maharashtra';
+    const stateVal = document.getElementById('geo-state')?.value || 'Delhi NCR';
     const marketAreaVal = document.getElementById('geo-market-area')?.value?.trim() || '';
-    const radiusVal = parseFloat(document.getElementById('geo-radius')?.value || '5');
-    const primaryCity = config.locations[0] || 'Nagpur';
+    const radiusVal = parseFloat(document.getElementById('geo-radius')?.value || '50');
+
+    // Resolve primary city smartly based on State, Market Area, or selected location tags
+    let primaryCity = config.locations[0] || marketAreaVal;
+    if (!primaryCity) {
+      if (stateVal.includes('Delhi')) primaryCity = 'Delhi';
+      else if (stateVal === 'Maharashtra') primaryCity = 'Mumbai';
+      else if (stateVal === 'Karnataka') primaryCity = 'Bengaluru';
+      else if (stateVal === 'Gujarat') primaryCity = 'Ahmedabad';
+      else if (stateVal === 'Tamil Nadu') primaryCity = 'Chennai';
+      else if (stateVal === 'Telangana') primaryCity = 'Hyderabad';
+      else if (stateVal === 'West Bengal') primaryCity = 'Kolkata';
+      else primaryCity = stateVal;
+    }
+
+    const resolvedLocations = config.locations.length > 0 ? config.locations : [primaryCity];
+    if (marketAreaVal && !resolvedLocations.includes(marketAreaVal)) {
+      resolvedLocations.unshift(marketAreaVal);
+    }
 
     const payload = {
-      name: `Scan: ${primaryCity}${marketAreaVal ? ' (' + marketAreaVal + ')' : ''}`,
+      name: `Scan: ${stateVal} — ${primaryCity}${marketAreaVal ? ' (' + marketAreaVal + ')' : ''}`,
       state: stateVal,
       city: primaryCity,
       market_area: marketAreaVal,
       radius_km: radiusVal,
       customer_types: config.industries.length > 0 ? config.industries : ['IT Dealers'],
       product_categories: config.products.length > 0 ? config.products : ['IT Hardware'],
-      target_regions: config.locations,
+      target_regions: resolvedLocations,
       target_categories: [...config.industries, ...config.products]
     };
 

@@ -466,69 +466,63 @@
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
                 <div class="form-group">
                   <label class="form-label">1. Target State</label>
-                  <select class="filter-select" id="geo-state" style="width:100%">
-                    <option value="Maharashtra" selected>Maharashtra</option>
-                    <option value="Delhi NCR">Delhi NCR</option>
+                  <select class="filter-select" id="geo-state" style="width:100%" onchange="onStateChange(this.value)">
+                    <option value="Delhi NCR" selected>Delhi NCR</option>
+                    <option value="Maharashtra">Maharashtra</option>
                     <option value="Karnataka">Karnataka</option>
                     <option value="Gujarat">Gujarat</option>
                     <option value="Tamil Nadu">Tamil Nadu</option>
                     <option value="Telangana">Telangana</option>
                     <option value="West Bengal">West Bengal</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Goa">Goa</option>
                     <option value="All India">All India (National Scan)</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">2. Target Market Hub / Area</label>
-                  <input type="text" class="form-input" id="geo-market-area" placeholder="e.g. Lamington Rd, Nehru Place, SP Rd..." />
+                  <label class="form-label">2. Target IT Market Hub / Area</label>
+                  <input type="text" class="form-input" id="geo-market-area" placeholder="e.g. Nehru Place, Lamington Rd, SP Rd..." />
                 </div>
                 <div class="form-group">
                   <label class="form-label">3. Scan Radius (km)</label>
                   <select class="filter-select" id="geo-radius" style="width:100%">
                     <option value="1">1 km (Exact Hub Bounding)</option>
-                    <option value="5" selected>5 km (Market District)</option>
+                    <option value="5">5 km (Market District)</option>
                     <option value="10">10 km (City Metro Radius)</option>
                     <option value="25">25 km (Greater Region)</option>
-                    <option value="50">50 km (Upcountry Hub)</option>
+                    <option value="50" selected>50 km (Upcountry Hub)</option>
                   </select>
                 </div>
               </div>
 
-              <!-- Region Tabs -->
-              <div class="form-group">
-                <label class="form-label">4. Pick Region &amp; Major Cities</label>
-                <div class="chip-grid" id="region-tabs">
-                  <div class="chip selected" data-region="nagpur"   onclick="selectRegion('nagpur')">🥭 Nagpur Region</div>
-                  <div class="chip"          data-region="nashik"   onclick="selectRegion('nashik')">🍇 Nashik Region</div>
-                  <div class="chip"          data-region="pune"     onclick="selectRegion('pune')">🔵 Pune Region</div>
-                  <div class="chip"          data-region="csn"      onclick="selectRegion('csn')">🔶 Chh. Sambhajinagar</div>
-                  <div class="chip"          data-region="kolhapur" onclick="selectRegion('kolhapur')">🟢 Kolhapur &amp; Goa</div>
-                  <div class="chip"          data-region="mumbai"   onclick="selectRegion('mumbai')">🔴 Mumbai Region</div>
-                </div>
-              </div>
-
-              <!-- City picker for selected region -->
+              <!-- Major Cities Picker for Selected State -->
               <div class="form-group" id="city-picker-wrap">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                  <label class="form-label" style="margin:0" id="city-picker-label">Cities in Nagpur Region</label>
+                  <label class="form-label" style="margin:0" id="city-picker-label">4. Select Cities in Delhi NCR</label>
                   <div style="display:flex;gap:8px">
-                    <button class="btn btn-ghost btn-sm" onclick="addAllRegionCities()">+ Add All</button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearRegionCities()">✕ Remove All</button>
+                    <button class="btn btn-ghost btn-sm" onclick="addAllStateCities()">+ Add All Cities</button>
+                    <button class="btn btn-ghost btn-sm" onclick="clearStateCities()">✕ Remove All</button>
                   </div>
                 </div>
                 <div class="chip-grid" id="city-chips"></div>
               </div>
 
-              <!-- Selected cities shown as tags -->
+              <!-- Selected Cities Tag Field -->
               <div class="form-group">
-                <label class="form-label">5. Selected Cities &nbsp;<span id="location-count" style="color:var(--accent);font-weight:700">0 cities</span></label>
+                <label class="form-label">5. Target Cities &amp; Hub Locations &nbsp;<span id="location-count" style="color:var(--accent);font-weight:700">0 selected</span></label>
                 <div class="tag-input-wrap" id="location-tags-wrap" onclick="focusTagInput()">
                   <input type="text" class="tag-input-field" id="location-tag-input"
-                         placeholder="Or type a custom city/upcountry area and press Enter..."
+                         placeholder="Or type custom city/area (e.g., New Delhi, Nehru Place) and press Enter..."
                          onkeydown="handleTagInput(event,'location-tags')" />
                 </div>
                 <div id="location-tags" style="display:none"></div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
-                  ✅ Radius search scans all IT Hardware Distributors, Dealers, Integrators, and Corporate Customers within spatial bounds. Master Customer Records are updated and deduplicated nationally.
+                  ✅ Spatial Geography &amp; Radius Engine automatically bounds discovery queries and updates National Master Customer Records without duplicate entries.
                 </div>
               </div>
 
