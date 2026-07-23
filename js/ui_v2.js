@@ -130,13 +130,17 @@ function showPage(pageId) {
   closeMobileSidebar();
 
   // Page-specific init
-  if (pageId === 'leads') { loadCampaignDropdown().then(() => filterLeads()); }
-  if (pageId === 'history') renderHistory();
-  if (pageId === 'analytics') renderAnalytics();
-  if (pageId === 'dashboard') renderDashboard();
-  if (pageId === 'settings') loadSettingsPage();
+  if (pageId === 'leads') { 
+    if (typeof loadCampaignDropdown === 'function') {
+      loadCampaignDropdown().then(() => { if (typeof filterLeads === 'function') filterLeads(); }).catch(() => {});
+    } else if (typeof filterLeads === 'function') { filterLeads(); }
+  }
+  if (pageId === 'history' && typeof renderHistory === 'function') renderHistory();
+  if (pageId === 'analytics' && typeof renderAnalytics === 'function') renderAnalytics();
+  if (pageId === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
+  if (pageId === 'settings' && typeof loadSettingsPage === 'function') loadSettingsPage();
   if (pageId === 'generate') {
-    updateQueryPreview();
+    if (typeof updateQueryPreview === 'function') updateQueryPreview();
     if (typeof onStateChange === 'function') {
       onStateChange(document.getElementById('geo-state')?.value || 'Delhi NCR');
     }
@@ -285,8 +289,10 @@ const STATE_CITIES = {
   'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Mohali', 'Bathinda'],
   'Rajasthan': ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer'],
   'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain'],
-  'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam'],
   'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
+  'All India': ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Chennai', 'Hyderabad', 'Ahmedabad', 'Pune', 'Jaipur', 'Lucknow']
+};
+
 // ── Recommended IT Market Hubs / Territory Places Data ────
 const STATE_HUBS = {
   'Delhi NCR': ['Nehru Place', 'Wazirpur Industrial Area', 'Lajpat Rai Market / Chandni Chowk', 'DLF Cyber City, Gurugram', 'Noida Sector 18 & 62 IT Hub', 'Janakpuri District Centre'],

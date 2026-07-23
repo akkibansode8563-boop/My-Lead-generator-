@@ -9,10 +9,14 @@ router.get('/campaigns', async (req, res) => {
       .from('campaigns')
       .select('id, name, created_at, status, leads_found, target_categories, target_regions')
       .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ data });
+    if (error) {
+      console.warn('[LeadsRoute] Supabase DB error, returning empty array fallback:', error.message);
+      return res.json({ data: [] });
+    }
+    res.json({ data: data || [] });
   } catch (e) {
-    res.status(500).json({ error: 'Server error' });
+    console.warn('[LeadsRoute] Exception, returning fallback:', e.message);
+    res.json({ data: [] });
   }
 });
 
@@ -39,9 +43,7 @@ router.get('/', async (req, res) => {
       .from('leads')
       .select('*', { count: 'exact' });
 
-    // CAMPAIGN ISOLATION — show only leads from the selected campaign run
     if (campaign_id) query = query.eq('campaign_id', campaign_id);
-
     if (city)         query = query.ilike('city', `%${city}%`);
     if (category)     query = query.ilike('category', `%${category}%`);
     if (industry)     query = query.ilike('category', `%${industry}%`);
@@ -61,19 +63,40 @@ router.get('/', async (req, res) => {
 
     const { data, count, error } = await query;
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.warn('[LeadsRoute] DB error on GET /api/leads, returning graceful fallback:', error.message);
+      return res.json({
+        data: [],
+        meta: {
+          total: 0,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: 0
+        }
+      });
+    }
 
+    const totalRecords = count || (data ? data.length : 0);
     res.json({
-      data,
+      data: data || [],
       meta: {
-        total: count,
+        total: totalRecords,
         page: parseInt(page),
         limit: parseInt(limit),
-        totalPages: Math.ceil(count / parseInt(limit))
+        totalPages: Math.ceil(totalRecords / parseInt(limit)) || 0
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.warn('[LeadsRoute] Exception on GET /api/leads, returning fallback:', error.message);
+    res.json({
+      data: [],
+      meta: {
+        total: 0,
+        page: parseInt(req.query.page || 1),
+        limit: parseInt(req.query.limit || 50),
+        totalPages: 0
+      }
+    });
   }
 });
 

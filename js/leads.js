@@ -8,8 +8,11 @@ const LEADS_KEY = 'lf_leads';
 
 // ── CRUD ──────────────────────────────────────
 function getLeads() {
-  try { return JSON.parse(localStorage.getItem(LEADS_KEY) || '[]'); }
-  catch(e) { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(LEADS_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
 }
 
 function saveBulkLeads(leadsArr) {
