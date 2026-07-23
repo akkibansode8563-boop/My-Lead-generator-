@@ -171,16 +171,28 @@ function loadDemoData() {
   localStorage.setItem('lf_history', JSON.stringify(history));
 }
 
-// Auto-init on load
+// Auto-init on load without authentication screen
 window.addEventListener('DOMContentLoaded', () => {
-  const user = getCurrentUser();
-  if (user) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    if (user.isDemo) {
-      loadDemoData();
-      document.getElementById('demo-banner').style.display = 'flex';
-    }
-    initApp(user);
+  let user = getCurrentUser();
+  if (!user) {
+    user = {
+      id: 'default-admin',
+      fname: 'Admin',
+      lname: 'User',
+      name: 'Admin User',
+      email: 'admin@myleadgenerator.com',
+      company: 'National IT Platform',
+      plan: 'pro',
+      isDemo: false,
+      runsCount: 0,
+      duplicatesSkipped: 0
+    };
+    localStorage.setItem('lf_current_user', JSON.stringify(user));
   }
+
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'none';
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.classList.add('visible');
+  initApp(user);
 });
