@@ -174,8 +174,8 @@ async function pollCampaignProgress(campaignId) {
 // ── Main Generate Flow (Calls Backend API) ───────────────────
 async function startApifyGenerate() {
   generateCancelled = false;
-
-  const config = {
+  try {
+    const config = {
     industries:     getSelectedChips('industries-chips'),
     products:       getSelectedChips('products-chips'),
     locations:      [...locationTags],
